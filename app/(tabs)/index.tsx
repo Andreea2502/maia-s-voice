@@ -1,171 +1,152 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { useSupabase } from '@/hooks/useSupabase';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useSubscription } from '@/hooks/useSubscription';
-import { UserProfile } from '@/types/user';
-import { Reading } from '@/types/reading';
+import { supabase } from '@/lib/supabase';
+import { isGuestMode } from '@/lib/guest';
+import { C } from '@/lib/colors';
+
+const DEMO_CARD = { name: 'Der Stern', symbol: '⭐', keywords: 'Hoffnung · Erneuerung · Heilung' };
 
 export default function HomeScreen() {
-  const supabase = useSupabase();
-  const { t } = useLanguage();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [recentReadings, setRecentReadings] = useState<Reading[]>([]);
-  const { tier, readingsThisMonth, hasReadingsLeft, tierConfig } = useSubscription(profile?.id);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [guest, setGuest] = useState(false);
 
   useEffect(() => {
-    loadData();
+    async function load() {
+      const guestMode = await isGuestMode();
+      setGuest(guestMode);
+      if (guestMode) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace('/(auth)/login'); return; }
+
+      const { data: profile } = await supabase
+        .from('user_profiles').select('display_name').eq('id', user.id).single();
+      setDisplayName(profile?.display_name ?? null);
+    }
+    load();
   }, []);
 
-  async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.replace('/(auth)/login');
-      return;
-    }
-
-    const [{ data: profileData }, { data: readingsData }] = await Promise.all([
-      supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-      supabase.from('readings').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
-    ]);
-
-    setProfile(profileData);
-    setRecentReadings(readingsData ?? []);
-  }
-
-  function getGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('home.greeting_morning');
-    if (hour < 18) return t('home.greeting_afternoon');
-    return t('home.greeting_evening');
-  }
-
-  const readingsLeft = tierConfig?.readingsPerMonth === -1 ? '∞' :
-    Math.max(0, (tierConfig?.readingsPerMonth ?? 2) - readingsThisMonth);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>{getGreeting()}{profile?.displayName ? `, ${profile.displayName}` : ''}</Text>
-        <View style={styles.readingsBadge}>
-          <Text style={styles.readingsLeft}>
-            {typeof readingsLeft === 'number'
-              ? t('home.readings_left').replace('{{count}}', String(readingsLeft))
-              : `∞ ${t('home.readings_left').replace('{{count}}', '∞')}`}
+
+      {/* Guest banner */}
+      {guest && (
+        <TouchableOpacity style={styles.guestBanner} onPress={() => router.push('/(auth)/login')}>
+          <Text style={styles.guestBannerText}>
+            🔍 Testmodus · <Text style={styles.guestBannerLink}>Jetzt Konto erstellen →</Text>
           </Text>
-        </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Greeting */}
+      <View style={styles.header}>
+        <Text style={styles.greeting}>
+          {greeting}{displayName ? `, ${displayName}` : ''}
+        </Text>
+        <Text style={styles.sub}>Was möchtest du heute erkunden?</Text>
       </View>
 
-      {/* Daily card CTA */}
+      {/* Start reading CTA */}
       <TouchableOpacity
-        style={styles.startCard}
-        onPress={() => {
-          if (!hasReadingsLeft()) {
-            router.push('/settings/subscription');
-          } else {
-            router.push('/reading/onboarding');
-          }
-        }}
+        style={styles.ctaCard}
+        onPress={() => router.push('/reading/onboarding')}
         activeOpacity={0.85}
       >
-        <Text style={styles.startCardEmoji}>✦</Text>
-        <Text style={styles.startCardTitle}>{t('home.start_reading')}</Text>
-        <Text style={styles.startCardArrow}>→</Text>
+        <Text style={styles.ctaIcon}>✦</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ctaTitle}>Neue Legung</Text>
+          <Text style={styles.ctaSub}>Lass Maia für dich legen</Text>
+        </View>
+        <Text style={styles.ctaArrow}>→</Text>
       </TouchableOpacity>
 
-      {/* Daily card */}
+      {/* Karte des Tages */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.daily_card')}</Text>
+        <Text style={styles.sectionLabel}>KARTE DES TAGES</Text>
         <View style={styles.dailyCard}>
-          <Text style={styles.dailyCardSymbol}>⟡</Text>
-          <Text style={styles.dailyCardName}>Der Stern</Text>
-          <Text style={styles.dailyCardKeyword}>Hoffnung · Erneuerung · Heilung</Text>
+          <Text style={styles.dailySymbol}>{DEMO_CARD.symbol}</Text>
+          <Text style={styles.dailyName}>{DEMO_CARD.name}</Text>
+          <Text style={styles.dailyKeywords}>{DEMO_CARD.keywords}</Text>
+          <TouchableOpacity style={styles.dailyBtn}>
+            <Text style={styles.dailyBtnText}>Mehr erfahren  →</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Recent readings */}
+      {/* Quick actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.recent_readings')}</Text>
-        {recentReadings.length === 0 ? (
-          <Text style={styles.emptyText}>{t('home.no_readings')}</Text>
-        ) : (
-          recentReadings.map((r) => (
-            <TouchableOpacity
-              key={r.id}
-              style={styles.readingItem}
-              onPress={() => { /* navigate to reading detail */ }}
-            >
-              <View>
-                <Text style={styles.readingDate}>
-                  {new Date(r.createdAt).toLocaleDateString()}
-                </Text>
-                <Text style={styles.readingSpread}>{r.spreadType}</Text>
-              </View>
-              <Text style={styles.readingArrow}>›</Text>
+        <Text style={styles.sectionLabel}>SCHNELLZUGRIFF</Text>
+        <View style={styles.quickGrid}>
+          {[
+            { icon: '☕', label: 'Kaffeesatz' },
+            { icon: '📅', label: 'Wochenlegung' },
+            { icon: '❤️', label: 'Liebe' },
+            { icon: '💼', label: 'Karriere' },
+          ].map((item) => (
+            <TouchableOpacity key={item.label} style={styles.quickBtn}>
+              <Text style={styles.quickIcon}>{item.icon}</Text>
+              <Text style={styles.quickLabel}>{item.label}</Text>
             </TouchableOpacity>
-          ))
-        )}
+          ))}
+        </View>
       </View>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D0A1E' },
-  content: { padding: 24, gap: 24, paddingBottom: 60 },
-  header: { gap: 8 },
-  greeting: { fontSize: 24, fontWeight: '700', color: '#F5E6D0', letterSpacing: 0.3 },
-  readingsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#C9956A22',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#C9956A44',
+  container: { flex: 1, backgroundColor: C.bg },
+  content:   { padding: 20, gap: 24, paddingBottom: 60 },
+
+  guestBanner: {
+    backgroundColor: C.surface,
+    borderRadius: 12, borderWidth: 1.5, borderColor: C.border,
+    padding: 12, alignItems: 'center',
   },
-  readingsLeft: { color: '#C9956A', fontSize: 12, fontWeight: '600' },
-  startCard: {
-    backgroundColor: '#1a0a2e',
-    borderRadius: 20,
-    padding: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: '#C9956A66',
+  guestBannerText: { color: C.textMuted, fontSize: 13 },
+  guestBannerLink: { color: C.gold, fontWeight: '700' },
+
+  header:   { gap: 4 },
+  greeting: { fontSize: 24, fontWeight: '800', color: C.white },
+  sub:      { fontSize: 14, color: C.textSec },
+
+  ctaCard: {
+    backgroundColor: C.surfaceUp,
+    borderRadius: 20, padding: 22,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    borderWidth: 1.5, borderColor: C.gold + '66',
   },
-  startCardEmoji: { fontSize: 28, color: '#C9956A' },
-  startCardTitle: { fontSize: 18, fontWeight: '700', color: '#F5E6D0', flex: 1, marginLeft: 12 },
-  startCardArrow: { fontSize: 22, color: '#C9956A' },
-  section: { gap: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: 1.5 },
+  ctaIcon:  { fontSize: 28, color: C.gold },
+  ctaTitle: { fontSize: 18, fontWeight: '800', color: C.white },
+  ctaSub:   { fontSize: 13, color: C.textSec, marginTop: 2 },
+  ctaArrow: { fontSize: 22, color: C.gold },
+
+  section:      { gap: 12 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 1.8 },
+
   dailyCard: {
-    backgroundColor: '#12092a',
-    borderRadius: 18,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#C9956A33',
+    backgroundColor: C.surface, borderRadius: 18,
+    padding: 24, alignItems: 'center', gap: 8,
+    borderWidth: 1.5, borderColor: C.border,
   },
-  dailyCardSymbol: { fontSize: 32, color: '#C9956A' },
-  dailyCardName: { fontSize: 18, fontWeight: '700', color: '#F5E6D0' },
-  dailyCardKeyword: { fontSize: 13, color: '#888' },
-  emptyText: { color: '#555', fontSize: 14, textAlign: 'center', lineHeight: 22 },
-  readingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff08',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#ffffff11',
+  dailySymbol:   { fontSize: 36 },
+  dailyName:     { fontSize: 20, fontWeight: '800', color: C.white },
+  dailyKeywords: { fontSize: 13, color: C.textSec },
+  dailyBtn:      { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: C.gold },
+  dailyBtnText:  { color: C.gold, fontSize: 13, fontWeight: '700' },
+
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  quickBtn:  {
+    width: '47%', backgroundColor: C.surface,
+    borderRadius: 16, padding: 18,
+    alignItems: 'center', gap: 8,
+    borderWidth: 1.5, borderColor: C.border,
   },
-  readingDate: { color: '#aaa', fontSize: 12 },
-  readingSpread: { color: '#F5E6D0', fontSize: 14, fontWeight: '600' },
-  readingArrow: { color: '#C9956A', fontSize: 20 },
+  quickIcon:  { fontSize: 28 },
+  quickLabel: { fontSize: 13, fontWeight: '700', color: C.textSec },
 });

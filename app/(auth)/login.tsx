@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { enableGuestMode } from '@/lib/guest';
 import { C } from '@/lib/colors';
 
 export default function LoginScreen() {
@@ -43,6 +44,11 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGuest() {
+    await enableGuestMode();
+    router.replace('/(tabs)/');
   }
 
   return (
@@ -112,6 +118,19 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>oder · or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Guest button */}
+        <TouchableOpacity style={styles.guestBtn} onPress={handleGuest}>
+          <Text style={styles.guestBtnText}>🔍  Ohne Anmeldung ausprobieren</Text>
+          <Text style={styles.guestBtnSub}>Explore without account</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -119,7 +138,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  inner:     { flex: 1, justifyContent: 'center', padding: 28, gap: 40 },
+  inner:     { flex: 1, justifyContent: 'center', padding: 28, gap: 28 },
   header:    { alignItems: 'center', gap: 12 },
   star:      { fontSize: 48, color: C.gold },
   title:     { fontSize: 28, fontWeight: '800', color: C.white, letterSpacing: 0.5 },
@@ -127,31 +146,32 @@ const styles = StyleSheet.create({
   form:      { gap: 14 },
   input: {
     backgroundColor: C.surface,
-    borderWidth: 1.5,
-    borderColor: C.border,
+    borderWidth: 1.5, borderColor: C.border,
     borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 15,
-    color: C.white,
-    fontSize: 16,
+    paddingHorizontal: 18, paddingVertical: 15,
+    color: C.white, fontSize: 16,
   },
   errorBox: {
-    backgroundColor: C.errorBg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: C.errorBorder,
-    padding: 12,
+    backgroundColor: C.errorBg, borderRadius: 12,
+    borderWidth: 1, borderColor: C.errorBorder, padding: 12,
   },
-  errorText: { color: C.error, fontSize: 13 },
-  btn: {
-    backgroundColor: C.gold,
-    borderRadius: 14,
-    paddingVertical: 17,
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  errorText:   { color: C.error, fontSize: 13 },
+  btn:         { backgroundColor: C.gold, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 4 },
   btnDisabled: { opacity: 0.6 },
   btnText:     { color: C.bg, fontSize: 16, fontWeight: '800' },
   switchText:  { color: C.textMuted, fontSize: 14, textAlign: 'center', marginTop: 4 },
   switchLink:  { color: C.gold, fontWeight: '700' },
+
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
+  dividerText: { color: C.textMuted, fontSize: 12 },
+
+  guestBtn: {
+    borderWidth: 1.5, borderColor: C.border,
+    borderRadius: 14, paddingVertical: 16,
+    alignItems: 'center', gap: 4,
+    backgroundColor: C.surface,
+  },
+  guestBtnText: { color: C.textSec, fontSize: 15, fontWeight: '700' },
+  guestBtnSub:  { color: C.textMuted, fontSize: 12 },
 });
