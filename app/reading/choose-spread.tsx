@@ -1,26 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SPREADS } from '@/lib/spreads';
 import { SpreadType } from '@/types/card';
-import { useLanguage } from '@/hooks/useLanguage';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useSupabase } from '@/hooks/useSupabase';
+import { supabase } from '@/lib/supabase';
+import { isGuestMode } from '@/lib/guest';
+import { canUseSpread } from '@/lib/subscription-tiers';
+import { SubscriptionTier } from '@/types/user';
+import { C } from '@/lib/colors';
 
 export default function ChooseSpreadScreen() {
-  const { t, language } = useLanguage();
   const params = useLocalSearchParams<{ onboarding_summary: string; input_mode: string }>();
-  const supabase = useSupabase();
-  const [userId, setUserId] = React.useState<string>();
-
-  React.useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
-  }, []);
-
-  const { canUseSpread } = useSubscription(userId);
   const [selected, setSelected] = useState<SpreadType>('three_card');
+  const [tier, setTier] = useState<SubscriptionTier>('free');
+  const [guest, setGuest] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const guestMode = await isGuestMode();
+      setGuest(guestMode);
+      if (guestMode) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('user_profiles').select('subscription_tier').eq('id', user.id).single();
+      if (data?.subscription_tier) setTier(data.subscription_tier as SubscriptionTier);
+    }
+    load();
+  }, []);
 
   function handleNext() {
     router.push({
@@ -35,75 +41,62 @@ export default function ChooseSpreadScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('reading.choose_spread')}</Text>
+      <Text style={styles.title}>Lege-Art wählen</Text>
+      {guest && (
+        <Text style={styles.guestHint}>🔍 Testmodus — alle Legearten verfügbar</Text>
+      )}
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {SPREADS.map((spread) => {
-          const unlocked = canUseSpread(spread.id);
-          const name = spread.name[language] ?? spread.name['de'];
+          const unlocked = guest || canUseSpread(tier, spread.id);
+          const name = spread.name['de'] ?? spread.name['en'];
           const isSelected = selected === spread.id;
 
           return (
             <TouchableOpacity
               key={spread.id}
-              style={[
-                styles.spreadItem,
-                isSelected && styles.spreadItemSelected,
-                !unlocked && styles.spreadItemLocked,
-              ]}
+              style={[styles.item, isSelected && styles.itemOn, !unlocked && styles.itemLocked]}
               onPress={() => unlocked && setSelected(spread.id)}
               activeOpacity={unlocked ? 0.8 : 1}
             >
-              <View style={styles.spreadItemContent}>
-                <Text style={[styles.spreadName, isSelected && styles.spreadNameSelected]}>
-                  {name}
-                </Text>
-                <Text style={styles.spreadCards}>
+              <View style={styles.itemContent}>
+                <Text style={[styles.itemName, isSelected && styles.itemNameOn]}>{name}</Text>
+                <Text style={styles.itemCards}>
                   {spread.cardCount} {spread.cardCount === 1 ? 'Karte' : 'Karten'}
                 </Text>
               </View>
-              {!unlocked && <Text style={styles.lockIcon}>🔒</Text>}
-              {isSelected && <Text style={styles.checkIcon}>✓</Text>}
+              {!unlocked && <Text style={styles.lock}>🔒</Text>}
+              {isSelected && <Text style={styles.check}>✓</Text>}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-        <Text style={styles.nextBtnText}>{t('common.continue')}</Text>
+        <Text style={styles.nextBtnText}>Weiter →</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D0A1E', padding: 24, gap: 20 },
-  title: { fontSize: 22, fontWeight: '700', color: '#F5E6D0' },
-  scroll: { flex: 1 },
-  spreadItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff08',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: '#ffffff11',
+  container: { flex: 1, backgroundColor: C.bg, padding: 24, gap: 16 },
+  title:     { fontSize: 22, fontWeight: '800', color: C.white },
+  guestHint: { color: C.textMuted, fontSize: 13 },
+  scroll:    { flex: 1 },
+  item: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: C.surface, borderRadius: 14, padding: 16, marginBottom: 10,
+    borderWidth: 1.5, borderColor: C.border,
   },
-  spreadItemSelected: { borderColor: '#C9956A', backgroundColor: '#C9956A11' },
-  spreadItemLocked: { opacity: 0.4 },
-  spreadItemContent: { gap: 2 },
-  spreadName: { color: '#F5E6D0', fontSize: 16, fontWeight: '600' },
-  spreadNameSelected: { color: '#C9956A' },
-  spreadCards: { color: '#666', fontSize: 13 },
-  lockIcon: { fontSize: 18 },
-  checkIcon: { color: '#C9956A', fontSize: 18, fontWeight: '700' },
-  nextBtn: {
-    backgroundColor: '#C9956A',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextBtnText: { color: '#1a0a2e', fontSize: 16, fontWeight: '700' },
+  itemOn:     { borderColor: C.gold, backgroundColor: C.surfaceUp },
+  itemLocked: { opacity: 0.4 },
+  itemContent: { gap: 3 },
+  itemName:    { color: C.white, fontSize: 16, fontWeight: '600' },
+  itemNameOn:  { color: C.gold },
+  itemCards:   { color: C.textMuted, fontSize: 13 },
+  lock:  { fontSize: 18 },
+  check: { color: C.gold, fontSize: 18, fontWeight: '700' },
+  nextBtn: { backgroundColor: C.gold, borderRadius: 14, paddingVertical: 17, alignItems: 'center' },
+  nextBtnText: { color: C.bg, fontSize: 16, fontWeight: '800' },
 });
