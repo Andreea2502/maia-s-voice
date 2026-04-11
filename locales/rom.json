@@ -1,0 +1,8 @@
+{
+  "common": { "continue": "Nak angle", "back": "Palal", "cancel": "Mek", "save": "Thovav", "delete": "Strad", "confirm": "Pakiv", "close": "Band kar", "loading": "Lovel pes...", "error": "Garado", "retry": "Xutav pale", "yes": "Va", "no": "Na", "or": "vai" },
+  "auth": { "title": "Tarot – Tiri Karta", "subtitle": "Arakhe tiri vorba", "login_button": "Aven ando than", "signup_button": "Likh tut" },
+  "onboarding": { "choose_persona_title": "Irin tiri drabarnì", "choose_persona_subtitle": "Savi drabarnì si laki energia. Kon vorbi tusa?", "persona_select": "Irin", "persona_selected": "Irime", "choose_input_title": "Sar kamesa te vorbis?", "voice_option_title": "Glaso", "voice_option_desc": "Vorbi dzi drabarnìsa tusa.", "text_option_title": "Lil", "text_option_desc": "Likh tiri vorba.", "voice_start": "Shur e vorba", "text_start": "Shur e lil-vorba", "listening": "Shunel...", "speaking": "Vorbel...", "thinking": "Gondinel...", "tap_to_speak": "Chuv vast te vorbis", "end_conversation": "Bandu e vorba", "proceed_to_cards": "Ka e karta", "type_here": "Likh akate...", "send": "Trad" },
+  "reading": { "new_reading": "Nevo drab", "choose_spread": "Irin e thov", "virtual_draw": "Virtual tras", "photo_upload": "Kino karta", "get_interpretation": "Len e vorba", "generating": "Tiri drabarnì dikhel e karta...", "interpretation_title": "Tiro vorba", "upright": "Upruno", "reversed": "Palumo" },
+  "home": { "daily_card": "Diveseski karta", "start_reading": "Nevo drab", "no_readings": "Nane drab nika.", "upgrade_prompt": "Mukh mai but drab" },
+  "errors": { "network": "Garado ando lino.", "limit_reached": "Pherde masekuno kotor." }
+}

@@ -1,0 +1,8 @@
+{
+  "common": { "continue": "Devam et", "back": "Geri", "cancel": "İptal", "save": "Kaydet", "delete": "Sil", "confirm": "Onayla", "close": "Kapat", "loading": "Yükleniyor...", "error": "Hata", "retry": "Tekrar dene", "yes": "Evet", "no": "Hayır", "or": "veya" },
+  "auth": { "title": "Tarot – Senin Kartların", "subtitle": "Mesajlarını keşfet", "login_button": "Giriş yap", "signup_button": "Kayıt ol" },
+  "onboarding": { "choose_persona_title": "Rehberini seç", "choose_persona_subtitle": "Her okuyucunun kendine özgü enerjisi var. Seni kim çekiyor?", "persona_select": "Seç", "persona_selected": "Seçildi", "choose_input_title": "Nasıl konuşmak istersin?", "voice_option_title": "Sesle", "voice_option_desc": "Okuyucunla doğrudan konuş.", "text_option_title": "Yazıyla", "text_option_desc": "Yanıtlarını yaz.", "voice_start": "Sohbeti başlat", "text_start": "Yazılı sohbeti başlat", "listening": "Dinliyor...", "speaking": "Konuşuyor...", "thinking": "Düşünüyor...", "tap_to_speak": "Konuşmak için dokun", "end_conversation": "Sohbeti bitir", "proceed_to_cards": "Kartlara geç", "type_here": "Buraya yaz...", "send": "Gönder" },
+  "reading": { "new_reading": "Yeni okuma", "choose_spread": "Dizilim seç", "virtual_draw": "Sanal çek", "photo_upload": "Kartları fotoğrafla", "get_interpretation": "Yorumu al", "generating": "Okuyucun kartları yorumluyor...", "interpretation_title": "Senin yorumun", "upright": "Düz", "reversed": "Ters" },
+  "home": { "daily_card": "Günün kartı", "start_reading": "Yeni okuma", "no_readings": "Henüz okuma yok.", "upgrade_prompt": "Daha fazla okuma aç" },
+  "errors": { "network": "Ağ hatası.", "limit_reached": "Aylık limite ulaşıldı." }
+}

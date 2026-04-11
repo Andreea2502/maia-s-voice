@@ -1,0 +1,8 @@
+{
+  "common": { "continue": "जारी रखें", "back": "वापस", "cancel": "रद्द करें", "save": "सहेजें", "delete": "हटाएं", "confirm": "पुष्टि करें", "close": "बंद करें", "loading": "लोड हो रहा है...", "error": "त्रुटि", "retry": "पुनः प्रयास करें", "yes": "हाँ", "no": "नहीं", "or": "या" },
+  "auth": { "title": "टैरो – आपके पत्ते", "subtitle": "अपने संदेश खोजें", "login_button": "लॉग इन करें", "signup_button": "साइन अप करें" },
+  "onboarding": { "choose_persona_title": "अपनी मार्गदर्शिका चुनें", "choose_persona_subtitle": "हर पाठक की अपनी ऊर्जा होती है। कौन आपसे बात करती है?", "persona_select": "चुनें", "persona_selected": "चुना गया", "choose_input_title": "आप कैसे बात करना चाहते हैं?", "voice_option_title": "आवाज़ से", "voice_option_desc": "सीधे अपनी पाठक से बात करें।", "text_option_title": "टेक्स्ट से", "text_option_desc": "अपने जवाब लिखें।", "voice_start": "बातचीत शुरू करें", "text_start": "टेक्स्ट बातचीत शुरू करें", "listening": "सुन रहा है...", "speaking": "बोल रहा है...", "thinking": "सोच रहा है...", "tap_to_speak": "बोलने के लिए टैप करें", "end_conversation": "बातचीत समाप्त करें", "proceed_to_cards": "पत्तों पर जाएं", "type_here": "यहाँ लिखें...", "send": "भेजें" },
+  "reading": { "new_reading": "नई रीडिंग", "choose_spread": "स्प्रेड चुनें", "virtual_draw": "वर्चुअल ड्रॉ", "photo_upload": "पत्तों की फोटो लें", "get_interpretation": "व्याख्या प्राप्त करें", "generating": "आपकी पाठक पत्तों की व्याख्या कर रही है...", "interpretation_title": "आपकी व्याख्या", "upright": "सीधा", "reversed": "उल्टा" },
+  "home": { "daily_card": "दैनिक पत्ता", "start_reading": "नई रीडिंग", "no_readings": "अभी तक कोई रीडिंग नहीं।", "upgrade_prompt": "अधिक रीडिंग अनलॉक करें" },
+  "errors": { "network": "नेटवर्क त्रुटि।", "limit_reached": "मासिक सीमा पहुँच गई।" }
+}

@@ -1,0 +1,8 @@
+{
+  "common": { "continue": "ادامه", "back": "بازگشت", "cancel": "لغو", "save": "ذخیره", "delete": "حذف", "confirm": "تأیید", "close": "بستن", "loading": "در حال بارگذاری...", "error": "خطا", "retry": "تلاش دوباره", "yes": "بله", "no": "خیر", "or": "یا" },
+  "auth": { "title": "تاروت – کارت‌های شما", "subtitle": "پیام‌های خود را کشف کنید", "login_button": "ورود", "signup_button": "ثبت‌نام" },
+  "onboarding": { "choose_persona_title": "راهنمای خود را انتخاب کنید", "choose_persona_subtitle": "هر خوانشگر انرژی خاص خود را دارد. چه کسی با شما صحبت می‌کند؟", "persona_select": "انتخاب", "persona_selected": "انتخاب شد", "choose_input_title": "چگونه می‌خواهید صحبت کنید؟", "voice_option_title": "با صدا", "voice_option_desc": "مستقیماً با خوانشگرتان صحبت کنید.", "text_option_title": "با متن", "text_option_desc": "پاسخ‌های خود را بنویسید.", "voice_start": "شروع مکالمه", "text_start": "شروع مکالمه متنی", "listening": "در حال گوش دادن...", "speaking": "در حال صحبت...", "thinking": "در حال فکر کردن...", "tap_to_speak": "برای صحبت لمس کنید", "end_conversation": "پایان مکالمه", "proceed_to_cards": "رفتن به کارت‌ها", "type_here": "اینجا بنویسید...", "send": "ارسال" },
+  "reading": { "new_reading": "خوانش جدید", "choose_spread": "انتخاب چیدمان", "virtual_draw": "کشیدن مجازی", "photo_upload": "عکس‌گرفتن از کارت‌ها", "get_interpretation": "دریافت تفسیر", "generating": "خوانشگر شما کارت‌ها را تفسیر می‌کند...", "interpretation_title": "تفسیر شما", "upright": "مستقیم", "reversed": "معکوس" },
+  "home": { "daily_card": "کارت روز", "start_reading": "خوانش جدید", "no_readings": "هنوز خوانشی وجود ندارد.", "upgrade_prompt": "باز کردن خوانش‌های بیشتر" },
+  "errors": { "network": "خطای شبکه.", "limit_reached": "به محدودیت ماهانه رسیدید." }
+}
