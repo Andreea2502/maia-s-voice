@@ -1,25 +1,27 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { C } from '@/lib/colors';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: '#0D0A1E',
+          backgroundColor: C.tabBg,
           borderTopWidth: 1,
-          borderTopColor: '#ffffff11',
+          borderTopColor: C.tabBorder,
           paddingBottom: 8,
           paddingTop: 6,
           height: 64,
         },
-        tabBarActiveTintColor: '#C9956A',
-        tabBarInactiveTintColor: '#555555',
-        headerStyle: { backgroundColor: '#0D0A1E' },
-        headerTintColor: '#F5E6D0',
-        headerTitleStyle: { fontWeight: '700' },
+        tabBarActiveTintColor: C.gold,
+        tabBarInactiveTintColor: C.tabInactive,
+        headerStyle: { backgroundColor: C.bg },
+        headerTintColor: C.white,
+        headerTitleStyle: { fontWeight: '700', color: C.white },
         headerShadowVisible: false,
+        contentStyle: { backgroundColor: C.bg },
       }}
     >
       <Tabs.Screen
@@ -28,7 +30,7 @@ export default function TabsLayout() {
           title: 'Home',
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>✦</Text>,
-          headerTitle: 'Tarot',
+          headerTitle: "Maia's Voice",
         }}
       />
       <Tabs.Screen

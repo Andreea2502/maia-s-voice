@@ -4,12 +4,10 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useSupabase } from '@/hooks/useSupabase';
-import { useLanguage } from '@/hooks/useLanguage';
+import { supabase } from '@/lib/supabase';
+import { C } from '@/lib/colors';
 
 export default function LoginScreen() {
-  const supabase = useSupabase();
-  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +27,6 @@ export default function LoginScreen() {
       }
       if (result.error) throw result.error;
 
-      // Check if onboarding is completed
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('onboarding_completed')
@@ -42,7 +39,7 @@ export default function LoginScreen() {
         router.replace('/(tabs)/');
       }
     } catch (err: any) {
-      setError(err.message ?? t('errors.network'));
+      setError(err.message ?? 'Fehler / Error');
     } finally {
       setLoading(false);
     }
@@ -54,19 +51,21 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.symbol}>✦</Text>
-          <Text style={styles.title}>{t('auth.title')}</Text>
-          <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
+          <Text style={styles.star}>✦</Text>
+          <Text style={styles.title}>Maia's Voice</Text>
+          <Text style={styles.subtitle}>
+            {mode === 'login'
+              ? 'Willkommen zurück · Welcome back'
+              : 'Konto erstellen · Create account'}
+          </Text>
         </View>
 
-        {/* Form */}
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder={t('auth.email_label')}
-            placeholderTextColor="#666"
+            placeholder="E-Mail"
+            placeholderTextColor={C.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -75,35 +74,40 @@ export default function LoginScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder={t('auth.password_label')}
-            placeholderTextColor="#666"
+            placeholder="Passwort · Password"
+            placeholderTextColor={C.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           />
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>⚠️ {error}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.btn, loading && styles.btnDisabled]}
             onPress={handleAuth}
             disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator color="#1a0a2e" />
-            ) : (
-              <Text style={styles.btnText}>
-                {mode === 'signup' ? t('auth.signup_button') : t('auth.login_button')}
-              </Text>
-            )}
+            {loading
+              ? <ActivityIndicator color={C.bg} />
+              : <Text style={styles.btnText}>
+                  {mode === 'signup' ? 'Registrieren · Sign up' : 'Anmelden · Log in'}
+                </Text>
+            }
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
             <Text style={styles.switchText}>
-              {mode === 'login' ? t('auth.no_account') : t('auth.already_have_account')}{' '}
+              {mode === 'login'
+                ? 'Noch kein Konto? · No account?  '
+                : 'Schon ein Konto? · Have account?  '}
               <Text style={styles.switchLink}>
-                {mode === 'login' ? t('auth.signup_button') : t('auth.login_button')}
+                {mode === 'login' ? 'Registrieren' : 'Anmelden'}
               </Text>
             </Text>
           </TouchableOpacity>
@@ -114,76 +118,40 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0A1E',
-  },
-  inner: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 28,
-    gap: 40,
-  },
-  header: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  symbol: {
-    fontSize: 48,
-    color: '#C9956A',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#F5E6D0',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#888888',
-    letterSpacing: 0.3,
-  },
-  form: {
-    gap: 14,
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  inner:     { flex: 1, justifyContent: 'center', padding: 28, gap: 40 },
+  header:    { alignItems: 'center', gap: 12 },
+  star:      { fontSize: 48, color: C.gold },
+  title:     { fontSize: 28, fontWeight: '800', color: C.white, letterSpacing: 0.5 },
+  subtitle:  { fontSize: 14, color: C.textSec },
+  form:      { gap: 14 },
   input: {
-    backgroundColor: '#ffffff0d',
-    borderWidth: 1,
-    borderColor: '#ffffff22',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: '#F5E6D0',
+    backgroundColor: C.surface,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    color: C.white,
     fontSize: 16,
   },
-  errorText: {
-    color: '#ff6b6b',
-    fontSize: 13,
-    textAlign: 'center',
+  errorBox: {
+    backgroundColor: C.errorBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.errorBorder,
+    padding: 12,
   },
+  errorText: { color: C.error, fontSize: 13 },
   btn: {
-    backgroundColor: '#C9956A',
+    backgroundColor: C.gold,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 17,
     alignItems: 'center',
     marginTop: 4,
   },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-  btnText: {
-    color: '#1a0a2e',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  switchText: {
-    color: '#888888',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  switchLink: {
-    color: '#C9956A',
-    fontWeight: '600',
-  },
+  btnDisabled: { opacity: 0.6 },
+  btnText:     { color: C.bg, fontSize: 16, fontWeight: '800' },
+  switchText:  { color: C.textMuted, fontSize: 14, textAlign: 'center', marginTop: 4 },
+  switchLink:  { color: C.gold, fontWeight: '700' },
 });
