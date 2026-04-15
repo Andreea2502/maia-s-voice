@@ -5,7 +5,7 @@
  */
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { getAuthenticatedUser } from '../_shared/auth.ts';
+import { getOptionalUser } from '../_shared/auth.ts';
 import { generateText, generateEmbedding } from '../_shared/gemini-client.ts';
 import { getInterpretationPrompt, getMemoryExtractionPrompt } from '../_shared/prompt-templates/interpretation.ts';
 
@@ -15,21 +15,50 @@ serve(async (req) => {
   }
 
   try {
-    const { supabase, userId } = await getAuthenticatedUser(req);
+    const { supabase, userId } = await getOptionalUser(req);
     const body = await req.json();
     const { reading_id, cards, onboarding_summary, question, voice_used } = body;
 
-    // Reading + Profil laden
-    const [{ data: reading }, { data: profile }] = await Promise.all([
-      supabase.from('readings').select('*').eq('id', reading_id).eq('user_id', userId).single(),
-      supabase.from('user_profiles').select('preferred_language, life_context_summary, preferred_persona').eq('id', userId).single(),
-    ]);
+    let lang = 'de';
+    let pastPatterns: string[] = [];
+    let userContext = '';
 
-    if (!reading || !profile) throw new Error('Not found');
+    if (userId) {
+      const [{ data: profile }, { data: recentReadings }] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('preferred_language, life_context_summary, personal_profile')
+          .eq('id', userId)
+          .single(),
+        supabase
+          .from('readings')
+          .select('recurring_themes')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
 
-    const lang = profile.preferred_language as string;
+      lang = profile?.preferred_language ?? 'de';
+      pastPatterns = Array.from(
+        new Set((recentReadings ?? []).flatMap((r: any) => r.recurring_themes ?? []))
+      ) as string[];
 
-    // Kartenbedeutungen aus DB laden
+      // Build userContext from personal_profile
+      const pp = (profile?.personal_profile as any) ?? {};
+      userContext = [
+        pp.displayName       ? `Name: ${pp.displayName}`                              : '',
+        pp.pronouns          ? `Pronomen: ${pp.pronouns}`                             : '',
+        pp.relationshipStatus ? `Beziehungsstatus: ${pp.relationshipStatus}`          : '',
+        pp.lifeFocus         ? `Aktueller Fokus: ${pp.lifeFocus}`                     : '',
+        pp.areasOfInterest?.length
+          ? `Wichtige Bereiche: ${pp.areasOfInterest.join(', ')}`                     : '',
+        pp.characterDesc     ? `Selbstbeschreibung: ${pp.characterDesc}`              : '',
+        pp.conflictStyle     ? `Konfliktstil: ${pp.conflictStyle}`                    : '',
+        pp.openQuestion      ? `Offene Frage: ${pp.openQuestion}`                     : '',
+      ].filter(Boolean).join('\n');
+    }
+
+    // Kartenbedeutungen aus DB laden (works without auth — card_library is public)
     const cardIds = (cards ?? []).map((c: any) => c.card_id);
     const { data: cardData } = await supabase
       .from('card_library')
@@ -38,28 +67,24 @@ serve(async (req) => {
 
     const cardMap = new Map((cardData ?? []).map((c: any) => [c.id, c]));
 
-    // Wiederkehrende Themen aus letzten 5 Readings
-    const { data: recentReadings } = await supabase
-      .from('readings')
-      .select('recurring_themes')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    const pastPatterns = Array.from(
-      new Set((recentReadings ?? []).flatMap((r: any) => r.recurring_themes ?? []))
-    ) as string[];
-
     // Karten für Prompt aufbereiten
+    // Fallback-Reihenfolge für Kartennamen:
+    // 1. Übersetzung aus card_library DB
+    // 2. Name den die App mitschickt (c.cardName)
+    // 3. Rohe card_id als letzter Ausweg
     const cardsForPrompt = (cards ?? []).map((c: any, i: number) => {
       const data = cardMap.get(c.card_id);
+      const cardName = data?.name_translations?.[lang]
+        ?? data?.name_translations?.de
+        ?? c.cardName   // vom Client mitgeschickt — wichtigster Fallback
+        ?? c.card_id;
       const meaning = c.orientation === 'upright'
         ? data?.meaning_upright?.[lang] ?? data?.meaning_upright?.de ?? ''
         : data?.meaning_reversed?.[lang] ?? data?.meaning_reversed?.de ?? '';
       return {
         ...c,
-        positionMeaning: `Position ${i + 1}`,
-        cardName: data?.name_translations?.[lang] ?? data?.name_translations?.de ?? c.card_id,
+        positionMeaning: c.positionMeaning ?? c.positionLabel ?? `Position ${i + 1}`,
+        cardName,
         meaning,
       };
     });
@@ -67,10 +92,13 @@ serve(async (req) => {
     const systemPrompt = getInterpretationPrompt({
       language: lang as any,
       cards: cardsForPrompt,
+      spreadTitle: body.spreadTitle ?? '',
       question,
-      userContext: JSON.stringify(profile.life_context_summary ?? {}),
+      userContext,
       onboardingSummary: onboarding_summary,
       pastPatterns,
+      memoryEnabled: false,     // true once user is logged in and consented
+      personaId: body.persona_id,
     });
 
     // ── Gemini für Deutung ──────────────────────────────────────────
@@ -79,13 +107,13 @@ serve(async (req) => {
       userMessage: lang === 'de'
         ? 'Bitte interpretiere die Karten für diese Person.'
         : 'Please interpret the cards for this person.',
-      maxOutputTokens: 900,
+      maxOutputTokens: 1400,
     });
 
     // ── Erinnerungen extrahieren ────────────────────────────────────
     let extractedMemories: any[] = [];
     try {
-      const memorySystemPrompt = getMemoryExtractionPrompt(interpretation, onboarding_summary ?? '');
+      const memorySystemPrompt = getMemoryExtractionPrompt(interpretation, onboarding_summary ?? '', false);
       const memoryJson = await generateText({
         systemPrompt: memorySystemPrompt,
         userMessage: lang === 'de' ? 'Extrahiere die Erinnerungen.' : 'Extract the memories.',
@@ -95,29 +123,30 @@ serve(async (req) => {
       if (jsonMatch) extractedMemories = JSON.parse(jsonMatch[0]);
     } catch (_) { /* non-fatal */ }
 
-    // ── Erinnerungen mit Gemini Embeddings speichern ───────────────
-    for (const mem of extractedMemories) {
-      try {
-        const embedding = await generateEmbedding(mem.content);
-        await supabase.from('session_memory').insert({
-          user_id: userId,
-          memory_type: mem.memory_type,
-          content: mem.content,
-          importance_score: mem.importance_score ?? 0.5,
-          source_reading_id: reading_id,
-          embedding,
-          expires_at: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        });
-      } catch (_) { /* non-fatal */ }
-    }
+    // ── Erinnerungen + DB-Update nur für eingeloggte User ──────────
+    if (userId && reading_id && !reading_id.startsWith('guest_')) {
+      for (const mem of extractedMemories) {
+        try {
+          const embedding = await generateEmbedding(mem.content);
+          await supabase.from('session_memory').insert({
+            user_id: userId,
+            memory_type: mem.memory_type,
+            content: mem.content,
+            importance_score: mem.importance_score ?? 0.5,
+            source_reading_id: reading_id,
+            embedding,
+            expires_at: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+        } catch (_) { /* non-fatal */ }
+      }
 
-    // ── Reading in DB aktualisieren ─────────────────────────────────
-    await supabase.from('readings').update({
-      cards: cards ?? [],
-      onboarding_summary,
-      interpretation,
-      voice_used: voice_used ?? false,
-    }).eq('id', reading_id);
+      await supabase.from('readings').update({
+        cards: cards ?? [],
+        onboarding_summary,
+        interpretation,
+        voice_used: voice_used ?? false,
+      }).eq('id', reading_id);
+    }
 
     return new Response(
       JSON.stringify({

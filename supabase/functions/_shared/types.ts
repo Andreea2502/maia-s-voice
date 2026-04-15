@@ -1,6 +1,6 @@
 export type SupportedLanguage = 'ar'|'hi'|'rom'|'tr'|'fa'|'ro'|'hu'|'de'|'en';
-export type PersonaId = 'mystic_elena' | 'sage_amira' | 'guide_priya';
-export type SpreadType = 'single'|'three_card'|'celtic_cross'|'love_spread'|'career_spread'|'yes_no'|'past_present_future';
+export type PersonaId = 'luna' | 'zara' | 'maya';
+export type ModuleId = 'tarot' | 'astrology' | 'numerology' | 'coffee' | 'palm';
 export type InputMode = 'voice' | 'text';
 
 export interface UserProfile {
@@ -16,6 +16,7 @@ export interface UserProfile {
   readings_this_month: number;
 }
 
+// Tarot-specific
 export interface DrawnCard {
   position: number;
   card_id: string;
@@ -28,4 +29,15 @@ export interface CardMeaning {
   name: string;
   meaning: string;
   visual_description?: string;
+}
+
+// Universal reading context
+export interface UserContext {
+  language: SupportedLanguage;
+  mood: string;
+  mainConcern: string;
+  lifeContext: string;
+  deepQuestions: string[];
+  timestamp: number;
+  sessionId: string;
 }

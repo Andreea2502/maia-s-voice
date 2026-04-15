@@ -2,19 +2,38 @@ import { PersonaId, SupportedLanguage } from './types.ts';
 
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
 
+// Überstimme — universal guide for Onboarding + all non-Tarot modules
+const MASTER_AGENT_ID = Deno.env.get('ELEVENLABS_AGENT_ID_MASTER') ?? 'MASTER_AGENT_ID';
+
+// Tarot personas — selectable inside Tarot module
+// Luna = former Elena agent, Maya = former Amira agent, Zara = new (former Priya)
 const PERSONA_AGENT_MAP: Record<PersonaId, string> = {
-  mystic_elena: Deno.env.get('ELEVENLABS_AGENT_ID_ELENA') ?? 'AGENT_ID_ELENA',
-  sage_amira:   Deno.env.get('ELEVENLABS_AGENT_ID_AMIRA') ?? 'AGENT_ID_AMIRA',
-  guide_priya:  Deno.env.get('ELEVENLABS_AGENT_ID_PRIYA') ?? 'AGENT_ID_PRIYA',
+  luna: Deno.env.get('ELEVENLABS_AGENT_ID_LUNA') ?? '',   // agent_1701knxfa9wqf1evsa4c30v6nzy4
+  zara: Deno.env.get('ELEVENLABS_AGENT_ID_ZARA') ?? '',   // TODO: create in ElevenLabs dashboard
+  maya: Deno.env.get('ELEVENLABS_AGENT_ID_MAYA') ?? '',   // agent_6501knxg0zxhe9srdgt3kypg6z9b
+};
+
+// ─── Voice IDs for direct TTS (separate from ConvAI agents) ─────
+// Set these in Supabase Edge Function secrets.
+// Falls back to well-known ElevenLabs multilingual voices if not configured.
+export const PERSONA_VOICE_IDS: Record<string, string> = {
+  luna:   Deno.env.get('ELEVENLABS_VOICE_ID_LUNA')   ?? 'EXAVITQu4vr4xnSDxMaL', // Bella — warm, soft
+  maya:   Deno.env.get('ELEVENLABS_VOICE_ID_MAYA')   ?? 'AZnzlk1XvdvUeBnXmlld', // Domi — deep, grounded
+  zara:   Deno.env.get('ELEVENLABS_VOICE_ID_ZARA')   ?? 'MF3mGyEYCl7XYWbV9V6O', // Elli — clear, direct
+  master: Deno.env.get('ELEVENLABS_VOICE_ID_MASTER') ?? '21m00Tcm4TlvDq8ikWAM', // Rachel — neutral guide
 };
 
 export async function createConversationalAISession(params: {
-  personaId: PersonaId;
+  module: string;           // which module is requesting
+  personaId?: PersonaId;    // only relevant for tarot
   language: SupportedLanguage;
   systemPromptOverride?: string;
   firstMessage?: string;
 }): Promise<{ token: string; sessionId: string; agentId: string; wsUrl: string }> {
-  const agentId = PERSONA_AGENT_MAP[params.personaId];
+  const agentId = (params.module === 'tarot' && params.personaId)
+    ? PERSONA_AGENT_MAP[params.personaId]
+    : MASTER_AGENT_ID;
+
   const apiKey = Deno.env.get('ELEVENLABS_API_KEY')!;
 
   const body: Record<string, unknown> = { agent_id: agentId };
@@ -50,22 +69,42 @@ export async function createConversationalAISession(params: {
 
 export async function textToSpeech(params: {
   text: string;
-  voiceId: string;
+  voiceId?: string;
+  personaId?: string;
   language?: SupportedLanguage;
-}): Promise<ArrayBuffer> {
-  const apiKey = Deno.env.get('ELEVENLABS_API_KEY')!;
+}): Promise<{ audioBase64: string; mimeType: 'audio/mpeg' }> {
+  const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
+  if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
+
+  const voiceId = params.voiceId
+    ?? (params.personaId ? PERSONA_VOICE_IDS[params.personaId] : null)
+    ?? PERSONA_VOICE_IDS.master;
+
   const response = await fetch(
-    `${ELEVENLABS_API_BASE}/text-to-speech/${params.voiceId}`,
+    `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`,
     {
       method: 'POST',
       headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: params.text,
         model_id: 'eleven_turbo_v2_5',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.15 },
+        language_code: params.language === 'en' ? 'en' : 'de',
       }),
     }
   );
-  if (!response.ok) throw new Error(`TTS error: ${response.status}`);
-  return response.arrayBuffer();
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`ElevenLabs TTS error ${response.status}: ${err}`);
+  }
+
+  const audioBuffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(audioBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return { audioBase64: btoa(binary), mimeType: 'audio/mpeg' };
 }

@@ -37,7 +37,7 @@ export function VoiceSession({ persona, onComplete, onError, autoStart = true }:
       {/* Persona indicator */}
       <View style={[styles.personaHeader, { borderColor: persona.accentColor + '44' }]}>
         <Text style={[styles.personaEmoji]}>
-          {persona.id === 'mystic_elena' ? '🌙' : persona.id === 'sage_amira' ? '⭐' : '🔮'}
+          {persona.id === 'luna' ? '🌙' : persona.id === 'maya' ? '⭐' : '🔮'}
         </Text>
         <Text style={[styles.personaName, { color: persona.accentColor }]}>
           {persona.name['de']}

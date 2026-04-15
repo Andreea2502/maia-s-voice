@@ -111,10 +111,18 @@ export async function analyzeImage(params: {
 
 // Stimmen-Map pro Persona – aus den 30 Gemini-Voices
 export const PERSONA_VOICES: Record<string, string> = {
-  mystic_elena: 'Aoede',   // Warm, ruhig
-  sage_amira:   'Kore',    // Tief, mystisch
-  guide_priya:  'Puck',    // Klar, direkt, lebendig
+  luna: 'Aoede',    // Warm, sanft, fließend
+  maya: 'Kore',     // Tief, würdevoll, mystisch
+  zara: 'Puck',     // Klar, direkt, scharf
+  master: 'Aoede',  // Überstimme — universal guide
 };
+
+// TTS models to try in order — fallback chain
+const TTS_MODELS = [
+  'gemini-2.5-flash-preview-tts',
+  'gemini-2.0-flash-exp',
+  'gemini-2.0-flash-live-001',
+];
 
 export async function textToSpeech(params: {
   text: string;
@@ -125,40 +133,46 @@ export async function textToSpeech(params: {
     ?? (params.personaId ? PERSONA_VOICES[params.personaId] : null)
     ?? 'Aoede';
 
-  const response = await fetch(
-    `${GEMINI_API_BASE}/models/${MODELS.tts}:generateContent?key=${apiKey()}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: params.text }] }],
-        generationConfig: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: voice },
-            },
-          },
+  const body = JSON.stringify({
+    // No "role" field — TTS models don't need it
+    contents: [{ parts: [{ text: params.text }] }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: voice },
         },
-      }),
+      },
+    },
+  });
+
+  let lastError = '';
+  for (const model of TTS_MODELS) {
+    try {
+      const response = await fetch(
+        `${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey()}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+      );
+
+      if (!response.ok) {
+        lastError = `${model}: ${response.status} ${await response.text()}`;
+        continue;
+      }
+
+      const data = await response.json();
+      const audioPart = data.candidates?.[0]?.content?.parts?.[0];
+      if (!audioPart?.inline_data?.data) {
+        lastError = `${model}: no audio in response`;
+        continue;
+      }
+
+      return { audioBase64: audioPart.inline_data.data, mimeType: 'audio/pcm' };
+    } catch (e) {
+      lastError = `${model}: ${e}`;
     }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini TTS error ${response.status}: ${err}`);
   }
 
-  const data = await response.json();
-  const audioPart = data.candidates?.[0]?.content?.parts?.[0];
-  if (!audioPart?.inline_data?.data) {
-    throw new Error('Gemini TTS: No audio in response');
-  }
-
-  return {
-    audioBase64: audioPart.inline_data.data,
-    mimeType:    'audio/pcm',
-  };
+  throw new Error(`Gemini TTS failed: ${lastError}`);
 }
 
 // ─────────────────────────────────────────────

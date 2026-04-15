@@ -3,58 +3,150 @@ import { SupportedLanguage, DrawnCard, CardMeaning } from '../types.ts';
 export interface InterpretationParams {
   language: SupportedLanguage;
   cards: Array<DrawnCard & { positionMeaning: string; cardName: string; meaning: string }>;
+  spreadTitle: string;
   question?: string;
   userContext: string;
   onboardingSummary?: string;
-  pastPatterns: string[];
+  pastPatterns: string[];            // from session_memories — only if memory_enabled
+  memoryEnabled: boolean;            // user consent flag
+  personaId?: 'luna' | 'zara' | 'maya';
 }
 
+// ─── Safety check: detect crisis signals in user input ───────
+const CRISIS_SIGNALS_DE = [
+  'suizid', 'selbstmord', 'sterben wollen', 'nicht mehr leben',
+  'umbringen', 'alles beenden', 'keinen ausweg', 'hoffnungslos',
+  'ich will nicht mehr', 'es hat keinen sinn mehr',
+];
+const CRISIS_SIGNALS_EN = [
+  'suicide', 'kill myself', 'end it all', 'don\'t want to live',
+  'no reason to live', 'hopeless', 'want to die',
+];
+
+export function detectCrisisSignals(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    CRISIS_SIGNALS_DE.some((s) => lower.includes(s)) ||
+    CRISIS_SIGNALS_EN.some((s) => lower.includes(s))
+  );
+}
+
+// ─── Crisis response — ends reading immediately ──────────────
+export function getCrisisResponse(language: SupportedLanguage): string {
+  const responses: Partial<Record<SupportedLanguage, string>> = {
+    de: `Ich höre dich. Was du gerade teilst, ist wichtig — und es zeigt mir, dass du gerade durch etwas sehr Schweres gehst.
+
+Ich möchte die Karten jetzt zur Seite legen, denn das hier ist wichtiger als jedes Reading.
+
+Bitte wende dich jetzt an die Telefonseelsorge — sie sind kostenlos, rund um die Uhr erreichbar, und hören wirklich zu:
+📞 **0800 111 0 111** (Deutschland, kostenlos, 24/7)
+📞 **142** (Österreich, kostenlos, 24/7)
+📞 **143** (Schweiz, Die Dargebotene Hand, 24/7)
+
+Du bist nicht allein damit. Bitte ruf an.`,
+
+    en: `I hear you. What you're sharing matters — and it tells me you're going through something very heavy right now.
+
+I want to set the cards aside, because this is more important than any reading.
+
+Please reach out to a crisis line — they're free, available around the clock, and they truly listen:
+📞 **116 123** (Samaritans UK, free, 24/7)
+📞 **988** (USA Suicide & Crisis Lifeline, free, 24/7)
+📞 **13 11 14** (Australia Lifeline, 24/7)
+
+You are not alone in this. Please reach out.`,
+  };
+  return responses[language] ?? responses['de']!;
+}
+
+// ─── Main interpretation prompt ──────────────────────────────
 export function getInterpretationPrompt(params: InterpretationParams): string {
   const lang = params.language;
+
   const cardList = params.cards
     .map(
       (c, i) =>
-        `Position ${i + 1} (${c.positionMeaning}): ${c.cardName} (${c.orientation === 'upright' ? '↑' : '↓'})\n  Bedeutung: ${c.meaning}`
+        `Position ${i + 1} — ${c.positionMeaning}: "${c.cardName}" (${c.orientation === 'upright' ? 'aufrecht' : 'umgekehrt'})${c.meaning ? `\n  Bedeutung: ${c.meaning}` : ''}`
     )
     .join('\n\n');
 
-  return `Du bist eine erfahrene, einfühlsame Kartenleserin.
-Interpretiere die gezogenen Karten im Kontext dieser Person.
+  const memorySection = params.memoryEnabled && params.pastPatterns.length > 0
+    ? `## Wiederkehrende Muster aus früheren Gesprächen\n${params.pastPatterns.map((p) => `- ${p}`).join('\n')}\n(Beziehe diese Muster ein — nicht als Diagnose, sondern als Wiedererkennung.)`
+    : '';
 
-## Kontext der Person
-${params.userContext}
+  const personaNote = params.personaId ? PERSONA_STYLE_INJECTION[params.personaId] ?? '' : '';
+  const hasOnboarding = params.onboardingSummary && params.onboardingSummary.trim().length > 10;
+  const hasQuestion = params.question && params.question.trim().length > 3;
 
-## Zusammenfassung des Vorgesprächs
-${params.onboardingSummary ?? 'Kein Vorgesprächs-Protokoll vorhanden.'}
+  return `Du bist ${personaNote ? personaNote.split('\n')[0] : 'eine erfahrene Kartenleserin'} bei MYSTIC.
+${personaNote}
 
-## Wiederkehrende Themen aus früheren Readings
-${params.pastPatterns.length > 0 ? params.pastPatterns.map((p) => `- ${p}`).join('\n') : 'Erstes Reading.'}
+## ABSOLUTE GRENZEN — immer, ohne Ausnahme:
+- KEINE konkreten Vorhersagen ("Im Sommer wirst du...", "Er wird zurückkommen...")
+- KEINE medizinischen, rechtlichen oder finanziellen Aussagen
+- KEIN Bewerten der Entscheidungen der Person
+- Bei Suizid-Signalen: Reading sofort stoppen, Krisenhotline nennen (0800 111 0 111)
+- Nicht mit "Liebe Seele", "Geliebte" oder ähnlichen Anreden beginnen
 
-## Frage der Person
-"${params.question ?? 'Keine spezifische Frage gestellt.'}"
+## Kontext
+${hasOnboarding ? `Vorgespräch-Zusammenfassung: ${params.onboardingSummary}` : 'Kein Vorgespräch.'}
+${hasQuestion ? `Frage der Person (WORTLAUT): "${params.question}"` : 'Keine spezifische Frage.'}
+${params.spreadTitle ? `Legetechnik: ${params.spreadTitle}` : ''}
+${memorySection}
 
 ## Gezogene Karten
 ${cardList}
 
-## Aufgabe
-1. Interpretiere jede Karte einzeln im Kontext der Person
-2. Zeige Verbindungen zwischen den Karten auf
-3. Beziehe dich direkt auf das Vorgespräch
-4. Sprich wiederkehrende Themen an, falls vorhanden
-5. Ende mit einer ermutigenden, realistischen Botschaft
-6. Schlage 1-2 konkrete Reflexionsfragen vor
+## Deine Aufgabe
 
-## Stil
-- Antwort auf: ${lang}
-- Sprachniveau: A2-B1
-- Ton: warm, einfühlsam, respektvoll
-- KEINE Zukunftsvorhersagen – nur Reflexion und Perspektiven
-- Länge: 300-500 Wörter`;
+Schreibe eine Deutung, die sich wirklich auf DIESE Person und IHRE konkrete Situation bezieht.
+
+${hasQuestion ? `Beginne direkt mit der Frage der Person — greife ihren genauen Wortlaut auf.` : 'Beginne mit den Karten direkt.'}
+${hasOnboarding ? `Beziehe dich auf das, was die Person im Vorgespräch erzählt hat — konkret, nicht abstrakt.` : ''}
+
+**Struktur:**
+1. Jede Karte einzeln deuten — was bedeutet sie in DIESER Position für DIESE Person?
+2. Was sagen die Karten zusammen — gibt es Spannungen, Bestätigungen, eine Geschichte?
+3. Kernbotschaft: Was kann die Person jetzt damit anfangen? Praktisch, nicht nur inspirierend.
+4. Eine oder zwei echte Fragen zum Nachdenken (keine Ratschläge).
+
+**Stil:**
+- Sprache: ${lang === 'de' ? 'Deutsch' : lang}
+- Ton: ${PERSONA_TONE[params.personaId ?? 'luna']}
+- Direkt und konkret — keine blumigen Umschreibungen, keine Allgemeinplätze
+- Sätze kurz halten. Auf den Punkt kommen.
+- Keine Phrasen wie "Die Karten zeigen...", "Das Universum sagt...", "Deine Seele..."
+- Länge: 400–600 Wörter`;
 }
 
-export function getMemoryExtractionPrompt(interpretation: string, onboardingSummary: string): string {
+// ─── Persona style injections ─────────────────────────────────
+const PERSONA_STYLE_INJECTION: Record<string, string> = {
+  luna: `Luna — eine ruhige, ehrliche Kartenleserin. Warm aber direkt. Kein Blabla.`,
+  zara: `Zara — direkt, scharf, unverblümt. Sagt die Wahrheit, auch wenn sie unbequem ist. Ohne Umschweife.`,
+  maya: `Maya — geerdet, mütterlich, klar. Spricht aus Erfahrung. Keine mystischen Floskeln.`,
+};
+
+const PERSONA_TONE: Record<string, string> = {
+  luna: 'warm und klar — keine überladene Metaphorik',
+  zara: 'direkt und scharf — sagt was ist, ohne Drumherum',
+  maya: 'ruhig und geerdet — verständlich, aus dem Leben',
+  master: 'neutral und klar',
+};
+
+// ─── Memory extraction (only when memory_enabled = true) ──────
+export function getMemoryExtractionPrompt(
+  interpretation: string,
+  onboardingSummary: string,
+  memoryEnabled: boolean
+): string {
+  if (!memoryEnabled) {
+    // Return empty array prompt — nothing will be stored
+    return `[]`;
+  }
+
   return `Analysiere die folgende Tarot-Interpretation und das Vorgesprächsprotokoll.
 Extrahiere 1-3 wichtige Erinnerungen über die Person, die für zukünftige Readings relevant sein könnten.
+Extrahiere NUR Dinge die für ein späteres Gespräch wirklich nützlich sind — keine banalen Details.
 
 ## Interpretation
 ${interpretation}
@@ -62,7 +154,7 @@ ${interpretation}
 ## Vorgesprächs-Zusammenfassung
 ${onboardingSummary}
 
-## Ausgabeformat (JSON-Array)
+## Ausgabeformat (JSON-Array, NUR JSON, kein weiterer Text)
 [
   {
     "memory_type": "life_event|emotional_pattern|recurring_question|preference|relationship|goal|concern",
@@ -71,5 +163,6 @@ ${onboardingSummary}
   }
 ]
 
-Antworte NUR mit dem JSON-Array, ohne weiteren Text.`;
+WICHTIG: Niemals sensible Details wie Krankheiten, Suizidgedanken oder intime Details speichern.
+Antworte NUR mit dem JSON-Array.`;
 }

@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { getAuthenticatedUser } from '../_shared/auth.ts';
+import { getOptionalUser } from '../_shared/auth.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -8,9 +8,22 @@ serve(async (req) => {
   }
 
   try {
-    const { supabase, userId } = await getAuthenticatedUser(req);
+    const { supabase, userId } = await getOptionalUser(req);
     const body = await req.json();
     const { spread_type = 'three_card', question, reading_type = 'virtual', input_mode = 'voice' } = body;
+
+    // Guest mode — no DB, no limits
+    if (!userId) {
+      return new Response(
+        JSON.stringify({
+          reading_id: `guest_${Date.now()}`,
+          user_context_summary: null,
+          relevant_memories: [],
+          spread_type,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Fetch profile + check reading limits
     const { data: profile } = await supabase

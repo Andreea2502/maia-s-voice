@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { VoiceSessionStatus, VoiceSessionToken, TranscriptEntry, VoiceSessionResult } from '@/types/voice';
 import { useSupabase } from './useSupabase';
 
-export function useVoiceSession() {
+export function useVoiceSession(moduleId: string = 'companion') {
   const supabase = useSupabase();
   const [status, setStatus] = useState<VoiceSessionStatus>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -12,10 +12,12 @@ export function useVoiceSession() {
   const startTimeRef = useRef<number>(0);
 
   const getToken = useCallback(async (): Promise<VoiceSessionToken> => {
-    const { data, error } = await supabase.functions.invoke('voice-token');
+    const { data, error } = await supabase.functions.invoke('voice-token', {
+      body: { module: moduleId },
+    });
     if (error) throw new Error(error.message);
     return data as VoiceSessionToken;
-  }, [supabase]);
+  }, [supabase, moduleId]);
 
   const connect = useCallback(async () => {
     setStatus('connecting');

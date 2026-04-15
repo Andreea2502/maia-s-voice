@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Maia's Voice",
-    "slug": "maias-voice",
+    "name": "Mystic",
+    "slug": "mystic-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,24 +9,24 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0D0A1E"
+      "backgroundColor": "#07050F"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.tarotapp.ai",
+      "bundleIdentifier": "com.mysticapp.ai",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Wir benötigen Ihr Mikrofon für die Sprach-Kartenlektüre.",
-        "NSCameraUsageDescription": "Wir benötigen Ihre Kamera, um Tarot-Karten zu fotografieren.",
-        "NSPhotoLibraryUsageDescription": "Wir benötigen Zugriff auf Ihre Fotos, um Tarot-Karten zu erkennen."
+        "NSMicrophoneUsageDescription": "Mystic benötigt dein Mikrofon für das Gespräch mit deiner Beraterin.",
+        "NSCameraUsageDescription": "Mystic benötigt deine Kamera für Kaffeesatz- und Palmreading.",
+        "NSPhotoLibraryUsageDescription": "Mystic benötigt Zugriff auf deine Fotos für Kaffeesatz- und Palmreading."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0D0A1E"
+        "backgroundColor": "#07050F"
       },
-      "package": "com.tarotapp.ai",
+      "package": "com.mysticapp.ai",
       "permissions": [
         "RECORD_AUDIO",
         "CAMERA",
@@ -36,7 +36,7 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "static"
+      "output": "single"
     },
     "plugins": [
       "expo-router",
@@ -44,14 +44,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Wir benötigen Ihre Kamera für die Karten-Erkennung."
+          "cameraPermission": "Mystic benötigt deine Kamera für Kaffeesatz- und Palmreading."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "maias-voice",
+    "scheme": "mystic",
     "extra": {
       "eas": {
         "projectId": "your-eas-project-id"

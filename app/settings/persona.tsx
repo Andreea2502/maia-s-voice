@@ -5,12 +5,12 @@ import { PERSONAS } from '@/lib/personas';
 import { PersonaAvatar } from '@/components/ui/PersonaAvatar';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useLanguage } from '@/hooks/useLanguage';
-import { PersonaId } from '@/types/user';
+import { PersonaId } from '@/lib/personas';
 
 export default function PersonaScreen() {
   const supabase = useSupabase();
   const { t, language } = useLanguage();
-  const [selected, setSelected] = useState<PersonaId>('mystic_elena');
+  const [selected, setSelected] = useState<PersonaId>('luna');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

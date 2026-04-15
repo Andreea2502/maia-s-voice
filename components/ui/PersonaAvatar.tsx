@@ -29,7 +29,7 @@ export function PersonaAvatar({
     <View style={[styles.avatarRing, selected && { borderColor: persona.accentColor }]}>
       <View style={[styles.avatarBg, { backgroundColor: persona.backgroundGradient[1], width: dim, height: dim, borderRadius: dim / 2 }]}>
         <Text style={[styles.avatarEmoji, { fontSize: dim * 0.4 }]}>
-          {persona.id === 'mystic_elena' ? '🌙' : persona.id === 'sage_amira' ? '⭐' : '🔮'}
+          {persona.id === 'luna' ? '🌙' : persona.id === 'maya' ? '⭐' : '🔮'}
         </Text>
       </View>
     </View>

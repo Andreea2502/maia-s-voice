@@ -1,6 +1,6 @@
 import '@/lib/i18n';
 import React, { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,17 +8,18 @@ import { supabase } from '@/lib/supabase';
 import { warmGuestCache } from '@/lib/guest';
 import { setAppLanguage } from '@/lib/i18n';
 import { Session } from '@supabase/supabase-js';
-import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C } from '@/lib/colors';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
+function NavigationGuard() {
+  const router = useRouter();
+  const navState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navState?.key) return; // navigator not yet mounted
+
     async function init() {
       try {
         const [savedLang, guestMode] = await Promise.all([
@@ -29,8 +30,6 @@ export default function RootLayout() {
         if (savedLang) setAppLanguage(savedLang as any);
 
         if (guestMode) {
-          // Guest: skip auth entirely
-          setReady(true);
           SplashScreen.hideAsync();
           if (!savedLang) {
             router.replace('/(auth)/language-select');
@@ -41,7 +40,6 @@ export default function RootLayout() {
         }
 
         const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
 
         if (!savedLang) {
           router.replace('/(auth)/language-select');
@@ -63,25 +61,30 @@ export default function RootLayout() {
       } catch {
         router.replace('/(auth)/language-select');
       } finally {
-        setReady(true);
         SplashScreen.hideAsync();
       }
     }
 
     init();
+  }, [navState?.key]);
 
+  return null;
+}
+
+export default function RootLayout() {
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
-  if (!ready) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="light" backgroundColor={C.bg} />
+      <NavigationGuard />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: C.bg },
@@ -91,22 +94,38 @@ export default function RootLayout() {
           headerShadowVisible: false,
         }}
       >
-        <Stack.Screen name="(auth)/language-select" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/login"            options={{ headerShown: false }} />
+        {/* Auth */}
+        <Stack.Screen name="(auth)/language-select"    options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)/login"              options={{ headerShown: false }} />
         <Stack.Screen name="(auth)/onboarding-consent" options={{ title: 'Einwilligung', headerBackVisible: false }} />
-        <Stack.Screen name="(auth)/terms"   options={{ title: 'Nutzungsbedingungen' }} />
-        <Stack.Screen name="(auth)/privacy" options={{ title: 'Datenschutz' }} />
-        <Stack.Screen name="(tabs)"         options={{ headerShown: false }} />
-        <Stack.Screen name="reading/onboarding"      options={{ title: 'Vorgespräch', headerBackVisible: false }} />
-        <Stack.Screen name="reading/choose-spread"   options={{ title: 'Lege-Art' }} />
-        <Stack.Screen name="reading/question"        options={{ title: 'Deine Frage' }} />
-        <Stack.Screen name="reading/draw-cards"      options={{ title: 'Karten ziehen' }} />
-        <Stack.Screen name="reading/interpretation"  options={{ title: 'Deutung', headerBackVisible: false }} />
-        <Stack.Screen name="reading/feedback"        options={{ title: 'Feedback', headerBackVisible: false }} />
-        <Stack.Screen name="settings/language"       options={{ title: 'Sprache' }} />
-        <Stack.Screen name="settings/persona"        options={{ title: 'Leserin wählen' }} />
-        <Stack.Screen name="settings/privacy"        options={{ title: 'Datenschutz' }} />
-        <Stack.Screen name="settings/subscription"   options={{ title: 'Abonnement' }} />
+        <Stack.Screen name="(auth)/mode-select"        options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/index"          options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/profile-setup"  options={{ title: 'Persönliches Profil', headerBackVisible: false }} />
+        <Stack.Screen name="(auth)/terms"              options={{ title: 'Nutzungsbedingungen' }} />
+        <Stack.Screen name="(auth)/privacy"            options={{ title: 'Datenschutz' }} />
+
+        {/* Main tabs */}
+        <Stack.Screen name="(tabs)"                    options={{ headerShown: false }} />
+
+        {/* Module: Tarot */}
+        <Stack.Screen name="tarot/index"               options={{ headerShown: false }} />
+        <Stack.Screen name="tarot/persona-select"      options={{ title: 'Leserin wählen' }} />
+        <Stack.Screen name="tarot/onboarding"          options={{ title: 'Vorgespräch', headerBackVisible: false }} />
+        <Stack.Screen name="tarot/spread-select"       options={{ title: 'Legestil' }} />
+        <Stack.Screen name="tarot/draw"                options={{ title: 'Karten ziehen' }} />
+        <Stack.Screen name="tarot/reading"             options={{ title: 'Deutung', headerBackVisible: false }} />
+
+        {/* Module: Astrology */}
+        <Stack.Screen name="astrology/index"           options={{ headerShown: false }} />
+        <Stack.Screen name="astrology/birth-data"      options={{ title: 'Geburtsdaten' }} />
+        <Stack.Screen name="astrology/questionnaire"   options={{ title: 'Persönliches Profil' }} />
+        <Stack.Screen name="astrology/reading"         options={{ title: 'Dein Horoskop ✧', headerBackVisible: false }} />
+
+        {/* Settings */}
+        <Stack.Screen name="settings/language"         options={{ title: 'Sprache' }} />
+        <Stack.Screen name="settings/persona"          options={{ title: 'Leserin wählen' }} />
+        <Stack.Screen name="settings/privacy"          options={{ title: 'Datenschutz' }} />
+        <Stack.Screen name="settings/subscription"     options={{ title: 'Abonnement' }} />
       </Stack>
     </SafeAreaProvider>
   );

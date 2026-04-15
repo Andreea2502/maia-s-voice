@@ -3,16 +3,11 @@ export type SupportedLanguage =
 
 export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'unlimited';
 
-export type PersonaId =
-  | 'mystic_elena'
-  | 'sage_amira'
-  | 'guide_priya';
-
 export interface UserProfile {
   id: string;
   displayName?: string;
   preferredLanguage: SupportedLanguage;
-  preferredPersona: PersonaId;
+  preferredPersona: string;  // PersonaId — import from @/lib/personas
   voiceConsent: boolean;
   dataRetentionConsent: boolean;
   dataRetentionMonths: number;

@@ -27,18 +27,19 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>✦</Text>,
-          headerTitle: "Maia's Voice",
+          title: 'Mystic',
+          tabBarLabel: 'Entdecken',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✦</Text>,
+          headerTitle: '✦ MYSTIC',
+          headerTitleStyle: { fontWeight: '800', color: C.gold, letterSpacing: 3 },
         }}
       />
       <Tabs.Screen
         name="readings"
         options={{
-          title: 'Legungen',
-          tabBarLabel: 'Legungen',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🃏</Text>,
+          title: 'Verlauf',
+          tabBarLabel: 'Verlauf',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>◈</Text>,
         }}
       />
       <Tabs.Screen
@@ -46,7 +47,7 @@ export default function TabsLayout() {
         options={{
           title: 'Profil',
           tabBarLabel: 'Profil',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>◉</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>◉</Text>,
         }}
       />
     </Tabs>

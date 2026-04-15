@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { SubscriptionTier } from '@/types/user';
 import { useSupabase } from './useSupabase';
-import { TIERS, canUsePersona, canUseSpread, hasReadingsLeft } from '@/lib/subscription-tiers';
-import { PersonaId } from '@/types/user';
-import { SpreadType } from '@/types/card';
+import { TIERS, canUsePersona, hasReadingsLeft } from '@/lib/subscription-tiers';
+import { PersonaId } from '@/lib/personas';
 
 export function useSubscription(userId?: string) {
   const supabase = useSupabase();
@@ -30,7 +29,6 @@ export function useSubscription(userId?: string) {
     readingsThisMonth,
     tierConfig: TIERS[tier],
     canUsePersona: (id: PersonaId) => canUsePersona(tier, id),
-    canUseSpread: (type: SpreadType) => canUseSpread(tier, type),
     hasReadingsLeft: () => hasReadingsLeft(tier, readingsThisMonth),
   };
 }

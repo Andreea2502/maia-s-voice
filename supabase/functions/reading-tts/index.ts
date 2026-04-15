@@ -1,15 +1,14 @@
 /**
  * POST /reading-tts
- * Liest die Tarot-Deutung mit Gemini TTS (gemini-2.5-flash-preview-tts) vor.
- * Gibt PCM-Audio als base64 zurück – die App spielt es direkt ab.
+ * Liest die Tarot-Deutung mit ElevenLabs vor (Persona-Stimme).
+ * Gibt MP3-Audio als base64 zurück — direkt playbar in App + Browser.
  *
- * Request: { text: string, persona_id?: string, voice_name?: string }
- * Response: { audio_base64: string, mime_type: "audio/pcm", voice_used: string }
+ * Request:  { text: string, persona_id?: string, voice_id?: string }
+ * Response: { audio: string (base64), mime_type: "audio/mpeg", voice_used: string }
  */
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { getAuthenticatedUser } from '../_shared/auth.ts';
-import { textToSpeech, PERSONA_VOICES } from '../_shared/gemini-client.ts';
+import { textToSpeech, PERSONA_VOICE_IDS } from '../_shared/elevenlabs-client.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,9 +16,8 @@ serve(async (req) => {
   }
 
   try {
-    const { supabase, userId } = await getAuthenticatedUser(req);
     const body = await req.json();
-    const { text, persona_id, voice_name } = body;
+    const { text, persona_id, voice_id } = body;
 
     if (!text || text.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'text is required' }), {
@@ -28,27 +26,21 @@ serve(async (req) => {
       });
     }
 
-    // Max. 3000 Zeichen für TTS (zu lange Texte aufteilen)
+    // Max 3000 Zeichen — bei längeren Texten Anfang nehmen
     const truncated = text.slice(0, 3000);
 
     const { audioBase64, mimeType } = await textToSpeech({
       text: truncated,
       personaId: persona_id,
-      voiceName: voice_name,
+      voiceId: voice_id,
     });
 
-    const voiceUsed = voice_name
-      ?? (persona_id ? PERSONA_VOICES[persona_id] : null)
-      ?? 'Aoede';
+    const voiceUsed = voice_id
+      ?? (persona_id ? PERSONA_VOICE_IDS[persona_id] : null)
+      ?? PERSONA_VOICE_IDS.master;
 
     return new Response(
-      JSON.stringify({
-        audio_base64: audioBase64,
-        mime_type: mimeType,
-        voice_used: voiceUsed,
-        sample_rate: 24000,
-        encoding: 'pcm_s16le',
-      }),
+      JSON.stringify({ audio: audioBase64, mime_type: mimeType, voice_used: voiceUsed }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

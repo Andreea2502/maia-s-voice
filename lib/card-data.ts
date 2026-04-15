@@ -1,325 +1,354 @@
-import { CardLibraryEntry } from '@/types/card';
+/**
+ * Tarot card definitions — 78 cards with Supabase Storage URLs.
+ *
+ * IMAGE STORAGE:
+ *   Supabase Storage → bucket: "tarot-cards" (public)
+ *   Path: tarot-cards/major/00-the-fool.jpg
+ *         tarot-cards/minor/cups/01-ace-of-cups.jpg
+ *
+ * Once you upload your Midjourney images, replace SUPABASE_URL below
+ * with your actual Supabase project URL (from .env.local).
+ */
 
-// Major Arcana (22 cards)
-export const MAJOR_ARCANA: CardLibraryEntry[] = [
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const BASE = `${SUPABASE_URL}/storage/v1/object/public/tarot-cards`;
+
+function img(path: string): string {
+  return `${BASE}/${path}`;
+}
+
+export type CardSuit = 'cups' | 'wands' | 'swords' | 'pentacles';
+export type CardArcana = 'major' | 'minor';
+
+export interface TarotCard {
+  id: string;               // e.g. "major_00", "cups_01"
+  arcana: CardArcana;
+  suit?: CardSuit;
+  number: number;           // major: 0-21, minor: 1-14
+  nameDE: string;
+  nameEN: string;
+  imageUrl: string;
+  keywords: string[];
+  meaningUpright: string;
+  meaningReversed: string;
+  element?: string;
+  planet?: string;
+}
+
+// ─── Major Arcana (22 cards) ────────────────────────────────────────────────
+export const MAJOR_ARCANA: TarotCard[] = [
   {
-    id: 'major_00_fool',
-    arcana: 'major',
-    number: 0,
-    nameTranslations: { de: 'Der Narr', en: 'The Fool', ar: 'المهرج', tr: 'Deli', hi: 'मूर्ख' },
-    meaningUpright: {
-      de: 'Neubeginn, Spontaneität, Freiheit, Abenteuer, Offenheit',
-      en: 'New beginnings, spontaneity, freedom, adventure, openness',
-    },
-    meaningReversed: {
-      de: 'Leichtsinn, Naivität, Risiko, Unvorsichtigkeit',
-      en: 'Recklessness, naivety, risk, carelessness',
-    },
-    keywords: {
-      de: ['Freiheit', 'Neubeginn', 'Abenteuer', 'Vertrauen'],
-      en: ['Freedom', 'New beginning', 'Adventure', 'Trust'],
-    },
-    visualDescription:
-      'A young figure stands at the edge of a cliff, looking upward with a small bag on a stick, a white rose in hand, and a small dog at their heels.',
+    id: 'major_00', arcana: 'major', number: 0,
+    nameDE: 'Der Narr', nameEN: 'The Fool',
+    imageUrl: img('major/00-the-fool.jpg'),
+    keywords: ['Neubeginn', 'Spontaneität', 'Vertrauen', 'Unschuld'],
+    meaningUpright: 'Ein neuer Anfang voller Möglichkeiten. Vertraue dem Leben und wage den Sprung.',
+    meaningReversed: 'Unüberlegte Entscheidungen, Naivität, fehlende Richtung.',
+    planet: 'Uranus', element: 'Luft',
   },
   {
-    id: 'major_01_magician',
-    arcana: 'major',
-    number: 1,
-    nameTranslations: { de: 'Der Magier', en: 'The Magician', ar: 'الساحر', tr: 'Büyücü' },
-    meaningUpright: {
-      de: 'Willenskraft, Geschicklichkeit, Manifestation, Resourcennutzung',
-      en: 'Will power, skill, manifestation, resourcefulness',
-    },
-    meaningReversed: {
-      de: 'Manipulation, schlechte Planung, ungenutzte Talente',
-      en: 'Manipulation, poor planning, untapped talents',
-    },
-    keywords: { de: ['Wille', 'Können', 'Manifestation'], en: ['Will', 'Skill', 'Manifestation'] },
-    visualDescription:
-      'A figure stands behind a table with all four suit symbols, one arm raised holding a wand, the other pointing down. An infinity symbol hovers above.',
+    id: 'major_01', arcana: 'major', number: 1,
+    nameDE: 'Der Magier', nameEN: 'The Magician',
+    imageUrl: img('major/01-the-magician.jpg'),
+    keywords: ['Willenskraft', 'Manifestation', 'Ressourcen', 'Kreativität'],
+    meaningUpright: 'Du hast alles, was du brauchst. Nutze deine Fähigkeiten um deine Ziele zu manifestieren.',
+    meaningReversed: 'Manipulation, ungenutzte Talente, fehlende Konzentration.',
+    planet: 'Merkur', element: 'Alle vier',
   },
   {
-    id: 'major_02_high_priestess',
-    arcana: 'major',
-    number: 2,
-    nameTranslations: { de: 'Die Hohepriesterin', en: 'The High Priestess', ar: 'الكاهنة العظيمة', tr: 'Büyük Rahibe' },
-    meaningUpright: {
-      de: 'Intuition, inneres Wissen, Stille, Mysterium, Unterbewusstsein',
-      en: 'Intuition, inner knowledge, stillness, mystery, subconscious',
-    },
-    meaningReversed: {
-      de: 'Ignorierte Intuition, verborgenem Wissen, Geheimnisse',
-      en: 'Ignored intuition, hidden knowledge, secrets',
-    },
-    keywords: { de: ['Intuition', 'Stille', 'Weisheit'], en: ['Intuition', 'Stillness', 'Wisdom'] },
-    visualDescription: 'A serene figure sits between two pillars, holding a scroll, with a crescent moon at her feet.',
+    id: 'major_02', arcana: 'major', number: 2,
+    nameDE: 'Die Hohepriesterin', nameEN: 'The High Priestess',
+    imageUrl: img('major/02-the-high-priestess.jpg'),
+    keywords: ['Intuition', 'Unterbewusstsein', 'Geheimnis', 'inneres Wissen'],
+    meaningUpright: 'Vertraue deiner inneren Stimme. Die Antwort liegt bereits in dir.',
+    meaningReversed: 'Ignorierte Intuition, verborgene Informationen, oberflächliches Wissen.',
+    planet: 'Mond', element: 'Wasser',
   },
   {
-    id: 'major_03_empress',
-    arcana: 'major',
-    number: 3,
-    nameTranslations: { de: 'Die Herrscherin', en: 'The Empress', ar: 'الإمبراطورة', tr: 'İmparatoriçe' },
-    meaningUpright: {
-      de: 'Fruchtbarkeit, Natur, Schöpfung, Mutterschaft, Überfluss',
-      en: 'Fertility, nature, creation, motherhood, abundance',
-    },
-    meaningReversed: {
-      de: 'Abhängigkeit, Kreativitätsblockade, Vernachlässigung',
-      en: 'Dependence, creative block, neglect',
-    },
-    keywords: { de: ['Fülle', 'Natur', 'Schöpfung'], en: ['Abundance', 'Nature', 'Creation'] },
-    visualDescription: 'A lush figure sits on a throne in a fertile landscape, crowned with stars, surrounded by wheat and a waterfall.',
+    id: 'major_03', arcana: 'major', number: 3,
+    nameDE: 'Die Herrscherin', nameEN: 'The Empress',
+    imageUrl: img('major/03-the-empress.jpg'),
+    keywords: ['Fülle', 'Fruchtbarkeit', 'Natur', 'Mutterliebe'],
+    meaningUpright: 'Schöpferische Kraft, Fürsorge und Wachstum. Eine Zeit des Wohlstands und der Verbundenheit.',
+    meaningReversed: 'Abhängigkeit, Kreativitätsmangel, Vernachlässigung.',
+    planet: 'Venus', element: 'Erde',
   },
   {
-    id: 'major_04_emperor',
-    arcana: 'major',
-    number: 4,
-    nameTranslations: { de: 'Der Herrscher', en: 'The Emperor', ar: 'الإمبراطور', tr: 'İmparator' },
-    meaningUpright: {
-      de: 'Autorität, Struktur, Stabilität, Führung, Väterlichkeit',
-      en: 'Authority, structure, stability, leadership, fatherhood',
-    },
-    meaningReversed: {
-      de: 'Dominanz, Starrheit, Kontrolle, mangelnde Flexibilität',
-      en: 'Dominance, rigidity, control, lack of flexibility',
-    },
-    keywords: { de: ['Autorität', 'Struktur', 'Stabilität'], en: ['Authority', 'Structure', 'Stability'] },
-    visualDescription: 'An imposing figure sits on a stone throne with ram-head armrests, holding an ankh scepter, wearing a red robe.',
+    id: 'major_04', arcana: 'major', number: 4,
+    nameDE: 'Der Herrscher', nameEN: 'The Emperor',
+    imageUrl: img('major/04-the-emperor.jpg'),
+    keywords: ['Autorität', 'Struktur', 'Stabilität', 'Vaterenergie'],
+    meaningUpright: 'Feste Grundlagen, Führungskraft und Disziplin führen dich zum Ziel.',
+    meaningReversed: 'Tyrannei, Inflexibilität, Kontrollverlust.',
+    planet: 'Mars', element: 'Feuer',
   },
   {
-    id: 'major_05_hierophant',
-    arcana: 'major',
-    number: 5,
-    nameTranslations: { de: 'Der Hierophant', en: 'The Hierophant', ar: 'الحبر الأعظم', tr: 'Din Adamı' },
-    meaningUpright: {
-      de: 'Tradition, Spiritualität, Konvention, institutionelle Weisheit',
-      en: 'Tradition, spirituality, convention, institutional wisdom',
-    },
-    meaningReversed: { de: 'Rebellion, Dogma, Freigeistigkeit', en: 'Rebellion, dogma, free-thinking' },
-    keywords: { de: ['Tradition', 'Glaube', 'Weisheit'], en: ['Tradition', 'Faith', 'Wisdom'] },
-    visualDescription: 'A religious figure sits between two pillars, making a blessing gesture, with two supplicants kneeling before him.',
+    id: 'major_05', arcana: 'major', number: 5,
+    nameDE: 'Der Hierophant', nameEN: 'The Hierophant',
+    imageUrl: img('major/05-the-hierophant.jpg'),
+    keywords: ['Tradition', 'Lehre', 'Konvention', 'spirituelle Führung'],
+    meaningUpright: 'Suche Rat bei Bewährtem. Spirituelles Lernen und Zugehörigkeit zu einer Gemeinschaft.',
+    meaningReversed: 'Dogmatismus, Rebellion gegen Tradition, Heuchelei.',
+    planet: 'Venus', element: 'Erde',
   },
   {
-    id: 'major_06_lovers',
-    arcana: 'major',
-    number: 6,
-    nameTranslations: { de: 'Die Liebenden', en: 'The Lovers', ar: 'العشاق', tr: 'Aşıklar' },
-    meaningUpright: {
-      de: 'Liebe, Harmonie, Entscheidung, Werte, Partnerschaft',
-      en: 'Love, harmony, decision, values, partnership',
-    },
-    meaningReversed: {
-      de: 'Fehlentscheidung, Disharmonie, Wertekonflikte',
-      en: 'Poor decision, disharmony, value conflicts',
-    },
-    keywords: { de: ['Liebe', 'Entscheidung', 'Verbindung'], en: ['Love', 'Decision', 'Connection'] },
-    visualDescription: 'Two figures stand beneath an angel with outstretched wings, one before a fruit tree, the other before a flaming tree.',
+    id: 'major_06', arcana: 'major', number: 6,
+    nameDE: 'Die Liebenden', nameEN: 'The Lovers',
+    imageUrl: img('major/06-the-lovers.jpg'),
+    keywords: ['Liebe', 'Harmonie', 'Entscheidung', 'Werte'],
+    meaningUpright: 'Tiefe Verbundenheit und eine wichtige Entscheidung, die aus dem Herzen kommt.',
+    meaningReversed: 'Fehlkommunikation, Wertekonflikt, falsche Wahl.',
+    planet: 'Merkur', element: 'Luft',
   },
   {
-    id: 'major_07_chariot',
-    arcana: 'major',
-    number: 7,
-    nameTranslations: { de: 'Der Wagen', en: 'The Chariot', ar: 'المركبة', tr: 'Savaş Arabası' },
-    meaningUpright: {
-      de: 'Willenskraft, Kontrolle, Sieg, Entschlossenheit, Disziplin',
-      en: 'Will power, control, victory, determination, discipline',
-    },
-    meaningReversed: { de: 'Kontrollverlust, Aggressivität, Richtungslosigkeit', en: 'Loss of control, aggression, lack of direction' },
-    keywords: { de: ['Sieg', 'Wille', 'Disziplin'], en: ['Victory', 'Will', 'Discipline'] },
-    visualDescription: 'An armored figure stands in a chariot pulled by two sphinxes, holding a wand, crowned with stars.',
+    id: 'major_07', arcana: 'major', number: 7,
+    nameDE: 'Der Wagen', nameEN: 'The Chariot',
+    imageUrl: img('major/07-the-chariot.jpg'),
+    keywords: ['Kontrolle', 'Willenskraft', 'Sieg', 'Zielstrebigkeit'],
+    meaningUpright: 'Mit Disziplin und Fokus überwindest du Hindernisse und erreichst dein Ziel.',
+    meaningReversed: 'Kontrollverlust, Aggression, Ziellosigkeit.',
+    planet: 'Mond', element: 'Wasser',
   },
   {
-    id: 'major_08_strength',
-    arcana: 'major',
-    number: 8,
-    nameTranslations: { de: 'Die Kraft', en: 'Strength', ar: 'القوة', tr: 'Güç' },
-    meaningUpright: {
-      de: 'Innere Stärke, Mut, Mitgefühl, Geduld, Sanftheit',
-      en: 'Inner strength, courage, compassion, patience, gentleness',
-    },
-    meaningReversed: { de: 'Selbstzweifel, Schwäche, mangelndes Vertrauen', en: 'Self-doubt, weakness, lack of confidence' },
-    keywords: { de: ['Stärke', 'Mut', 'Mitgefühl'], en: ['Strength', 'Courage', 'Compassion'] },
-    visualDescription: 'A figure gently holds open the jaws of a lion, with an infinity symbol above, wearing white robes and a floral crown.',
+    id: 'major_08', arcana: 'major', number: 8,
+    nameDE: 'Die Kraft', nameEN: 'Strength',
+    imageUrl: img('major/08-strength.jpg'),
+    keywords: ['Mut', 'Sanftheit', 'innere Stärke', 'Geduld'],
+    meaningUpright: 'Wahre Stärke zeigt sich in Mitgefühl und Sanftheit, nicht in Gewalt.',
+    meaningReversed: 'Selbstzweifel, Kontrollverlust, innere Schwäche.',
+    planet: 'Sonne', element: 'Feuer',
   },
   {
-    id: 'major_09_hermit',
-    arcana: 'major',
-    number: 9,
-    nameTranslations: { de: 'Der Eremit', en: 'The Hermit', ar: 'الناسك', tr: 'Keşiş' },
-    meaningUpright: {
-      de: 'Innenschau, Einsamkeit, Führung, innere Suche, Rückzug',
-      en: 'Soul searching, solitude, guidance, introspection, withdrawal',
-    },
-    meaningReversed: { de: 'Isolation, Einsamkeit, Ablehnung von Führung', en: 'Isolation, loneliness, rejection of guidance' },
-    keywords: { de: ['Stille', 'Innenschau', 'Weisheit'], en: ['Stillness', 'Introspection', 'Wisdom'] },
-    visualDescription: 'An old figure stands on a mountaintop in grey robes, holding a lantern and a staff.',
+    id: 'major_09', arcana: 'major', number: 9,
+    nameDE: 'Der Eremit', nameEN: 'The Hermit',
+    imageUrl: img('major/09-the-hermit.jpg'),
+    keywords: ['Einsamkeit', 'innere Suche', 'Weisheit', 'Rückzug'],
+    meaningUpright: 'Eine Phase der Selbstreflexion und inneren Einkehr führt zu echter Weisheit.',
+    meaningReversed: 'Isolation, Sturheit, unnötige Einsamkeit.',
+    planet: 'Merkur', element: 'Erde',
   },
   {
-    id: 'major_10_wheel',
-    arcana: 'major',
-    number: 10,
-    nameTranslations: { de: 'Das Rad des Schicksals', en: 'Wheel of Fortune', ar: 'عجلة الحظ', tr: 'Kader Çarkı' },
-    meaningUpright: {
-      de: 'Glück, Karma, Wendepunkte, Schicksal, Lebenszyklen',
-      en: 'Good luck, karma, turning point, fate, life cycles',
-    },
-    meaningReversed: { de: 'Pech, Widerstand gegen Veränderung, Kontrollverlust', en: 'Bad luck, resistance to change, loss of control' },
-    keywords: { de: ['Wandel', 'Schicksal', 'Zyklus'], en: ['Change', 'Fate', 'Cycle'] },
-    visualDescription: 'A large wheel with symbolic figures is surrounded by four winged beings reading books in the corners.',
+    id: 'major_10', arcana: 'major', number: 10,
+    nameDE: 'Das Rad des Schicksals', nameEN: 'Wheel of Fortune',
+    imageUrl: img('major/10-wheel-of-fortune.jpg'),
+    keywords: ['Schicksal', 'Wandel', 'Zyklen', 'Glück'],
+    meaningUpright: 'Das Rad dreht sich — nach jedem Tief kommt ein Hoch. Vertraue dem Zyklus.',
+    meaningReversed: 'Pech, Widerstand gegen Veränderung, schlechtes Timing.',
+    planet: 'Jupiter', element: 'Feuer',
   },
   {
-    id: 'major_11_justice',
-    arcana: 'major',
-    number: 11,
-    nameTranslations: { de: 'Die Gerechtigkeit', en: 'Justice', ar: 'العدالة', tr: 'Adalet' },
-    meaningUpright: {
-      de: 'Fairness, Wahrheit, Gesetz, Ursache und Wirkung, Ausgeglichenheit',
-      en: 'Fairness, truth, law, cause and effect, balance',
-    },
-    meaningReversed: { de: 'Ungerechtigkeit, Unehrlichkeit, Unbalance', en: 'Injustice, dishonesty, imbalance' },
-    keywords: { de: ['Gerechtigkeit', 'Wahrheit', 'Balance'], en: ['Justice', 'Truth', 'Balance'] },
-    visualDescription: 'A robed figure sits on a throne holding scales and a sword upright, wearing a crown.',
+    id: 'major_11', arcana: 'major', number: 11,
+    nameDE: 'Die Gerechtigkeit', nameEN: 'Justice',
+    imageUrl: img('major/11-justice.jpg'),
+    keywords: ['Wahrheit', 'Ausgewogenheit', 'Recht', 'Karma'],
+    meaningUpright: 'Was du aussäst, das erntest du. Entscheidungen werden mit Klarheit und Fairness getroffen.',
+    meaningReversed: 'Ungerechtigkeit, Unehrlichkeit, Ungleichgewicht.',
+    planet: 'Venus', element: 'Luft',
   },
   {
-    id: 'major_12_hanged_man',
-    arcana: 'major',
-    number: 12,
-    nameTranslations: { de: 'Der Gehängte', en: 'The Hanged Man', ar: 'المشنوق', tr: 'Asılan Adam' },
-    meaningUpright: {
-      de: 'Pause, Loslassen, neue Perspektiven, Opferbereitschaft',
-      en: 'Pause, letting go, new perspectives, sacrifice',
-    },
-    meaningReversed: { de: 'Festhalten, Verzögerung, mangelndes Opfer', en: 'Stalling, holding on, lack of sacrifice' },
-    keywords: { de: ['Pause', 'Loslassen', 'Perspektive'], en: ['Pause', 'Release', 'Perspective'] },
-    visualDescription: 'A figure hangs upside down from one foot on a T-shaped cross made of living wood, with a serene expression.',
+    id: 'major_12', arcana: 'major', number: 12,
+    nameDE: 'Der Gehängte', nameEN: 'The Hanged Man',
+    imageUrl: img('major/12-the-hanged-man.jpg'),
+    keywords: ['Pause', 'Opfer', 'neue Perspektive', 'Loslassen'],
+    meaningUpright: 'Manchmal muss man innehalten und aus einer anderen Perspektive schauen.',
+    meaningReversed: 'Martyrium, Stagnation, Widerstand gegen das Loslassen.',
+    planet: 'Neptun', element: 'Wasser',
   },
   {
-    id: 'major_13_death',
-    arcana: 'major',
-    number: 13,
-    nameTranslations: { de: 'Der Tod', en: 'Death', ar: 'الموت', tr: 'Ölüm' },
-    meaningUpright: {
-      de: 'Wandel, Transformation, Übergänge, Abschlüsse, Neubeginn',
-      en: 'Change, transformation, transitions, endings, new beginnings',
-    },
-    meaningReversed: { de: 'Widerstand gegen Wandel, Stagnation, Festhalten', en: 'Resistance to change, stagnation, holding on' },
-    keywords: { de: ['Wandel', 'Transformation', 'Abschluss'], en: ['Change', 'Transformation', 'Ending'] },
-    visualDescription: 'A skeletal figure in black armor rides a white horse, carrying a black flag with a white rose.',
+    id: 'major_13', arcana: 'major', number: 13,
+    nameDE: 'Der Tod', nameEN: 'Death',
+    imageUrl: img('major/13-death.jpg'),
+    keywords: ['Transformation', 'Wandel', 'Ende', 'Neubeginn'],
+    meaningUpright: 'Kein Ende ohne Neubeginn. Eine tiefe Transformation bahnt sich an.',
+    meaningReversed: 'Widerstand gegen Veränderung, Festhalten am Alten.',
+    planet: 'Pluto', element: 'Wasser',
   },
   {
-    id: 'major_14_temperance',
-    arcana: 'major',
-    number: 14,
-    nameTranslations: { de: 'Die Mäßigung', en: 'Temperance', ar: 'الاعتدال', tr: 'Denge' },
-    meaningUpright: {
-      de: 'Balance, Mäßigung, Geduld, Zweck, Sinn',
-      en: 'Balance, moderation, patience, purpose, meaning',
-    },
-    meaningReversed: { de: 'Unbalance, Übertreibung, Ungeduld', en: 'Imbalance, excess, impatience' },
-    keywords: { de: ['Balance', 'Mäßigung', 'Geduld'], en: ['Balance', 'Moderation', 'Patience'] },
-    visualDescription: 'A winged figure pours water between two cups, standing with one foot in water, one on land.',
+    id: 'major_14', arcana: 'major', number: 14,
+    nameDE: 'Die Mäßigkeit', nameEN: 'Temperance',
+    imageUrl: img('major/14-temperance.jpg'),
+    keywords: ['Gleichgewicht', 'Geduld', 'Heilung', 'Harmonie'],
+    meaningUpright: 'Balance und Mäßigung führen zu innerem Frieden und Heilung.',
+    meaningReversed: 'Extreme, Ungeduld, fehlende Balance.',
+    planet: 'Jupiter', element: 'Feuer',
   },
   {
-    id: 'major_15_devil',
-    arcana: 'major',
-    number: 15,
-    nameTranslations: { de: 'Der Teufel', en: 'The Devil', ar: 'الشيطان', tr: 'Şeytan' },
-    meaningUpright: {
-      de: 'Bindungen, Abhängigkeit, Materalismus, Begrenzung, Schattenseiten',
-      en: 'Bondage, dependency, materialism, restriction, shadow self',
-    },
-    meaningReversed: { de: 'Befreiung, Kontrolle zurückgewinnen, loslassen', en: 'Liberation, reclaiming control, letting go' },
-    keywords: { de: ['Bindung', 'Schatten', 'Befreiung'], en: ['Bondage', 'Shadow', 'Liberation'] },
-    visualDescription: 'A horned, bat-winged figure sits on a pedestal above two chained figures, holding an inverted torch.',
+    id: 'major_15', arcana: 'major', number: 15,
+    nameDE: 'Der Teufel', nameEN: 'The Devil',
+    imageUrl: img('major/15-the-devil.jpg'),
+    keywords: ['Schatten', 'Bindung', 'Materialismus', 'Besessenheit'],
+    meaningUpright: 'Erkenne die Ketten, die dich halten — viele davon hast du selbst angelegt.',
+    meaningReversed: 'Befreiung, Selbstbewusstsein, Ablegen von Abhängigkeiten.',
+    planet: 'Saturn', element: 'Erde',
   },
   {
-    id: 'major_16_tower',
-    arcana: 'major',
-    number: 16,
-    nameTranslations: { de: 'Der Turm', en: 'The Tower', ar: 'البرج', tr: 'Kule' },
-    meaningUpright: {
-      de: 'Plötzlicher Wandel, Chaos, Offenbarung, Zerstörung alter Strukturen',
-      en: 'Sudden change, chaos, revelation, destruction of old structures',
-    },
-    meaningReversed: { de: 'Abgewandtes Chaos, Verzögerung, innere Transformation', en: 'Averted chaos, delay, inner transformation' },
-    keywords: { de: ['Erschütterung', 'Wandel', 'Offenbarung'], en: ['Upheaval', 'Change', 'Revelation'] },
-    visualDescription: 'A tower is struck by lightning, with two figures falling from the top, amid flames and a dark sky.',
+    id: 'major_16', arcana: 'major', number: 16,
+    nameDE: 'Der Turm', nameEN: 'The Tower',
+    imageUrl: img('major/16-the-tower.jpg'),
+    keywords: ['Zusammenbruch', 'Offenbarung', 'Chaos', 'Erneuerung'],
+    meaningUpright: 'Was auf falschen Fundamenten steht, bricht zusammen — um Platz für Neues zu machen.',
+    meaningReversed: 'Nahender Zusammenbruch, Vermeidung von Veränderung.',
+    planet: 'Mars', element: 'Feuer',
   },
   {
-    id: 'major_17_star',
-    arcana: 'major',
-    number: 17,
-    nameTranslations: { de: 'Der Stern', en: 'The Star', ar: 'النجمة', tr: 'Yıldız' },
-    meaningUpright: {
-      de: 'Hoffnung, Erneuerung, Inspiration, Heilung, Ruhe',
-      en: 'Hope, renewal, inspiration, healing, calm',
-    },
-    meaningReversed: { de: 'Hoffnungslosigkeit, Enttäuschung, Desillusion', en: 'Hopelessness, disappointment, disillusion' },
-    keywords: { de: ['Hoffnung', 'Heilung', 'Inspiration'], en: ['Hope', 'Healing', 'Inspiration'] },
-    visualDescription: 'A naked figure kneels by a pool under a sky full of stars, pouring water from two jugs.',
+    id: 'major_17', arcana: 'major', number: 17,
+    nameDE: 'Der Stern', nameEN: 'The Star',
+    imageUrl: img('major/17-the-star.jpg'),
+    keywords: ['Hoffnung', 'Heilung', 'Inspiration', 'Segen'],
+    meaningUpright: 'Nach dem Sturm kommt die Ruhe. Du wirst geheilt und von der Welt gesegnet.',
+    meaningReversed: 'Hoffnungslosigkeit, Enttäuschung, Verlust des Glaubens.',
+    planet: 'Uranus', element: 'Luft',
   },
   {
-    id: 'major_18_moon',
-    arcana: 'major',
-    number: 18,
-    nameTranslations: { de: 'Der Mond', en: 'The Moon', ar: 'القمر', tr: 'Ay' },
-    meaningUpright: {
-      de: 'Illusion, Angst, Unterbewusstsein, Verwirrung, Intuition',
-      en: 'Illusion, fear, subconscious, confusion, intuition',
-    },
-    meaningReversed: { de: 'Klarheit, Überwindung von Ängsten, innere Wahrheit', en: 'Clarity, overcoming fears, inner truth' },
-    keywords: { de: ['Illusion', 'Intuition', 'Unterbewusstsein'], en: ['Illusion', 'Intuition', 'Subconscious'] },
-    visualDescription: 'A full moon shines over a path leading to towers, with a crayfish emerging from water and a wolf and dog howling.',
+    id: 'major_18', arcana: 'major', number: 18,
+    nameDE: 'Der Mond', nameEN: 'The Moon',
+    imageUrl: img('major/18-the-moon.jpg'),
+    keywords: ['Illusion', 'Angst', 'Unbewusstes', 'Intuition'],
+    meaningUpright: 'Die Dinge sind nicht, was sie scheinen. Vertraue deiner Intuition im Nebel.',
+    meaningReversed: 'Verwirrung löst sich, Klarheit kommt, Täuschung aufgedeckt.',
+    planet: 'Neptun', element: 'Wasser',
   },
   {
-    id: 'major_19_sun',
-    arcana: 'major',
-    number: 19,
-    nameTranslations: { de: 'Die Sonne', en: 'The Sun', ar: 'الشمس', tr: 'Güneş' },
-    meaningUpright: {
-      de: 'Freude, Erfolg, Vitalität, Positivität, Kindlichkeit',
-      en: 'Joy, success, vitality, positivity, childlike wonder',
-    },
-    meaningReversed: { de: 'Übermäßiger Optimismus, Selbstgefälligkeit, trübe Aussichten', en: 'Overconfidence, complacency, clouded outlook' },
-    keywords: { de: ['Freude', 'Erfolg', 'Vitalität'], en: ['Joy', 'Success', 'Vitality'] },
-    visualDescription: 'A young child rides a white horse beneath a radiant sun, with sunflowers in the background.',
+    id: 'major_19', arcana: 'major', number: 19,
+    nameDE: 'Die Sonne', nameEN: 'The Sun',
+    imageUrl: img('major/19-the-sun.jpg'),
+    keywords: ['Freude', 'Erfolg', 'Vitalität', 'Klarheit'],
+    meaningUpright: 'Licht, Freude und Erfolg. Eine der positivsten Karten des Decks.',
+    meaningReversed: 'Temporäre Wolken, gedämpfte Begeisterung, übertriebeher Optimismus.',
+    planet: 'Sonne', element: 'Feuer',
   },
   {
-    id: 'major_20_judgement',
-    arcana: 'major',
-    number: 20,
-    nameTranslations: { de: 'Das Gericht', en: 'Judgement', ar: 'الحكم', tr: 'Yargılama' },
-    meaningUpright: {
-      de: 'Reflexion, Wiederbelebung, innerer Ruf, Befreiung, Absolution',
-      en: 'Reflection, revival, inner calling, liberation, absolution',
-    },
-    meaningReversed: { de: 'Selbstzweifel, mangelnde Reflexion, verpasste Gelegenheit', en: 'Self-doubt, lack of reflection, missed opportunity' },
-    keywords: { de: ['Erwachen', 'Befreiung', 'Ruf'], en: ['Awakening', 'Liberation', 'Calling'] },
-    visualDescription: 'An angel blows a trumpet above figures rising from coffins, arms outstretched, beneath red crosses.',
+    id: 'major_20', arcana: 'major', number: 20,
+    nameDE: 'Das Gericht', nameEN: 'Judgement',
+    imageUrl: img('major/20-judgement.jpg'),
+    keywords: ['Erneuerung', 'Rückblick', 'Entscheidung', 'Absolution'],
+    meaningUpright: 'Eine innere Abrechnung führt zur Befreiung. Du wirst zu einem höheren Selbst gerufen.',
+    meaningReversed: 'Selbstzweifel, Verleugnung, unfaire Selbstkritik.',
+    planet: 'Pluto', element: 'Feuer',
   },
   {
-    id: 'major_21_world',
-    arcana: 'major',
-    number: 21,
-    nameTranslations: { de: 'Die Welt', en: 'The World', ar: 'العالم', tr: 'Dünya' },
-    meaningUpright: {
-      de: 'Vollendung, Erfolg, Integration, Reisen, Erfüllung',
-      en: 'Completion, success, integration, travel, fulfillment',
-    },
-    meaningReversed: { de: 'Unvollständigkeit, Abkürzungen, mangelhafte Vollendung', en: 'Incompleteness, shortcuts, lack of completion' },
-    keywords: { de: ['Vollendung', 'Erfolg', 'Integration'], en: ['Completion', 'Success', 'Integration'] },
-    visualDescription: 'A dancing figure is surrounded by a laurel wreath and four winged beings in each corner, holding two wands.',
+    id: 'major_21', arcana: 'major', number: 21,
+    nameDE: 'Die Welt', nameEN: 'The World',
+    imageUrl: img('major/21-the-world.jpg'),
+    keywords: ['Vollendung', 'Integration', 'Erfolg', 'Ganzheit'],
+    meaningUpright: 'Du hast einen Zyklus vollendet. Feiere diesen Abschluss und die Ganzheit, die du erlangt hast.',
+    meaningReversed: 'Unvollendetes, fehlende Vollendung, Abkürzungen.',
+    planet: 'Saturn', element: 'Erde',
   },
 ];
 
-export const ALL_CARD_IDS = MAJOR_ARCANA.map((c) => c.id);
-
-export function getCardById(id: string): CardLibraryEntry | undefined {
-  return MAJOR_ARCANA.find((c) => c.id === id);
+// ─── Minor Arcana — helper ──────────────────────────────────────────────────
+function minor(
+  suit: CardSuit,
+  number: number,
+  nameDE: string,
+  nameEN: string,
+  keywords: string[],
+  upright: string,
+  reversed: string
+): TarotCard {
+  const pad = String(number).padStart(2, '0');
+  const slug = nameEN.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return {
+    id: `${suit}_${pad}`,
+    arcana: 'minor',
+    suit,
+    number,
+    nameDE,
+    nameEN,
+    imageUrl: img(`minor/${suit}/${pad}-${slug}.jpg`),
+    keywords,
+    meaningUpright: upright,
+    meaningReversed: reversed,
+  };
 }
 
-export function drawRandomCards(count: number): string[] {
-  const shuffled = [...ALL_CARD_IDS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+export const CUPS: TarotCard[] = [
+  minor('cups', 1,  'Ass der Kelche',    'Ace of Cups',    ['Liebe','neue Gefühle','Intuition'],      'Ein neues Gefühl öffnet sich wie eine Blüte.',   'Emotionale Blockade, unterdrückte Gefühle.'),
+  minor('cups', 2,  'Zwei der Kelche',   'Two of Cups',    ['Partnerschaft','Verbindung','Harmonie'],  'Tiefe gegenseitige Verbindung und Zuneigung.',   'Ungleichgewicht, Trennung, Missverständnis.'),
+  minor('cups', 3,  'Drei der Kelche',   'Three of Cups',  ['Feier','Gemeinschaft','Freude'],          'Freude teilen und feiern mit geliebten Menschen.','Übermaß, Isolation, Vernachlässigung.'),
+  minor('cups', 4,  'Vier der Kelche',   'Four of Cups',   ['Langeweile','Rückzug','Grübeln'],         'Innenschau und Neubeurteilung deiner Gefühle.',  'Neue Chancen öffnen sich, Motivation kehrt zurück.'),
+  minor('cups', 5,  'Fünf der Kelche',   'Five of Cups',   ['Verlust','Trauer','Bedauern'],            'Ein Verlust schmerzt — doch es bleibt noch etwas.','Akzeptanz, Heilung, vorwärts gehen.'),
+  minor('cups', 6,  'Sechs der Kelche',  'Six of Cups',    ['Nostalgie','Kindheit','Unschuld'],        'Schöne Erinnerungen und reine Herzensfreude.',   'Festhalten an der Vergangenheit, Naivität.'),
+  minor('cups', 7,  'Sieben der Kelche', 'Seven of Cups',  ['Illusion','Wahl','Fantasie'],             'Viele Möglichkeiten — bleib geerdet bei der Wahl.','Klarheit, entschlossene Entscheidung.'),
+  minor('cups', 8,  'Acht der Kelche',   'Eight of Cups',  ['Aufbruch','Suche','Loslassen'],           'Es ist Zeit, das Vertraute zu verlassen.',        'Zögern, aus Angst bleiben.'),
+  minor('cups', 9,  'Neun der Kelche',   'Nine of Cups',   ['Zufriedenheit','Wunscherfüllung','Glück'],'Dein Herzenwunsch erfüllt sich.',                 'Selbstzufriedenheit, materielle Ausrichtung.'),
+  minor('cups', 10, 'Zehn der Kelche',   'Ten of Cups',    ['Harmonie','Familie','Erfüllung'],         'Tiefes Glück in Beziehungen und Zuhause.',        'Brüche in der Familie, mangelnde Harmonie.'),
+  minor('cups', 11, 'Bube der Kelche',   'Page of Cups',   ['Kreativität','Botschaft','Träumerei'],    'Eine kreative Botschaft oder Eingebung trifft ein.','Unreife Gefühle, emotionale Manipulation.'),
+  minor('cups', 12, 'Ritter der Kelche', 'Knight of Cups', ['Romantik','Charme','Abenteuer'],          'Romantischer Schwung und Ideale leiten dich.',    'Launenhaftigkeit, Unrealismus.'),
+  minor('cups', 13, 'Königin der Kelche','Queen of Cups',  ['Einfühlsamkeit','Intuition','Fürsorge'],  'Tiefes emotionales Verständnis und Mitgefühl.',   'Emotionale Unsicherheit, Co-Abhängigkeit.'),
+  minor('cups', 14, 'König der Kelche',  'King of Cups',   ['Reife','Ruhe','emotionale Stärke'],       'Emotionale Reife und weises, mitfühlendes Handeln.','Emotionale Manipulation, Instabilität.'),
+];
+
+export const WANDS: TarotCard[] = [
+  minor('wands', 1,  'Ass der Stäbe',    'Ace of Wands',    ['Inspiration','Energie','Neubeginn'],      'Zündender Funke — ein neues kreatives Projekt beginnt.','Blockade, fehlende Energie.'),
+  minor('wands', 2,  'Zwei der Stäbe',   'Two of Wands',    ['Planung','Zukunft','Mut'],                 'Du blickst in die Ferne und planst deinen nächsten Schritt.','Angst vor dem Unbekannten.'),
+  minor('wands', 3,  'Drei der Stäbe',   'Three of Wands',  ['Expansion','Fortschritt','Weitblick'],     'Deine Pläne tragen erste Früchte. Halte den Horizont im Blick.','Verzögerungen, fehlende Langzeitplanung.'),
+  minor('wands', 4,  'Vier der Stäbe',   'Four of Wands',   ['Feier','Heimat','Harmonie'],               'Feiern, Ankommen, eine stabile Grundlage genießen.',    'Verschobene Feier, häusliche Spannung.'),
+  minor('wands', 5,  'Fünf der Stäbe',   'Five of Wands',   ['Konflikt','Konkurrenz','Chaos'],           'Produktive Reibung — nutze den Wettbewerb als Antrieb.',  'Unnötige Konflikte, Chaos.'),
+  minor('wands', 6,  'Sechs der Stäbe',  'Six of Wands',    ['Sieg','Anerkennung','Erfolg'],             'Öffentliche Anerkennung und Erfolg nach harter Arbeit.',  'Selbstüberschätzung, fehlende Anerkennung.'),
+  minor('wands', 7,  'Sieben der Stäbe', 'Seven of Wands',  ['Verteidigung','Ausdauer','Mut'],           'Halte deinen Standpunkt — du hast einen Vorteil.',        'Aufgeben, Überwältigtsein.'),
+  minor('wands', 8,  'Acht der Stäbe',   'Eight of Wands',  ['Bewegung','Schnelligkeit','Nachrichten'],  'Alles geht schnell voran. Gute Neuigkeiten im Anflug.',   'Verzögerungen, schlechtes Timing.'),
+  minor('wands', 9,  'Neun der Stäbe',   'Nine of Wands',   ['Ausdauer','Stärke','Schutz'],              'Fast am Ziel — halte durch, trotz Müdigkeit.',            'Erschöpfung, Paranoia.'),
+  minor('wands', 10, 'Zehn der Stäbe',   'Ten of Wands',    ['Bürde','Verantwortung','Erschöpfung'],     'Zu viel aufgenommen — es ist Zeit abzugeben.',            'Kollaps, zu viel auf einmal.'),
+  minor('wands', 11, 'Bube der Stäbe',   'Page of Wands',   ['Abenteuer','Energie','Neugier'],           'Frische Energie und Abenteuerlust treiben dich an.',      'Energie ohne Richtung, Impulsivität.'),
+  minor('wands', 12, 'Ritter der Stäbe', 'Knight of Wands', ['Abenteuerlust','Feuer','Kühnheit'],        'Voller Feuereifer in Richtung Ziel — schnell und mutig.',  'Rücksichtslosigkeit, Frustration.'),
+  minor('wands', 13, 'Königin der Stäbe','Queen of Wands',  ['Zuversicht','Charisma','Unabhängigkeit'],  'Charismatisch, leidenschaftlich, selbstsicher.',          'Dominanz, Eifersucht.'),
+  minor('wands', 14, 'König der Stäbe',  'King of Wands',   ['Vision','Führung','Entschlossenheit'],     'Visionäre Führungskraft mit natürlicher Autorität.',      'Impulsive Entscheidungen, Tyrannei.'),
+];
+
+export const SWORDS: TarotCard[] = [
+  minor('swords', 1,  'Ass der Schwerter',    'Ace of Swords',    ['Klarheit','Wahrheit','Durchbruch'],      'Geistige Klarheit und Wahrheit durchbricht den Nebel.',   'Falsche Überzeugungen, Verwirrung.'),
+  minor('swords', 2,  'Zwei der Schwerter',   'Two of Swords',    ['Pattsituation','Entscheidung','Balance'], 'Eine schwierige Entscheidung steht an — du musst hinsehen.',  'Lügen aufgedeckt, zu langes Zögern.'),
+  minor('swords', 3,  'Drei der Schwerter',   'Three of Swords',  ['Herzschmerz','Verlust','Schmerz'],        'Schmerz und Trauer gehören zum Leben — lass sie zu.',     'Heilung, Vergebung, Schmerz überunden.'),
+  minor('swords', 4,  'Vier der Schwerter',   'Four of Swords',   ['Ruhe','Erholung','Meditation'],           'Rückzug und Erholung sind jetzt notwendig.',              'Rastlosigkeit, Überarbeitung.'),
+  minor('swords', 5,  'Fünf der Schwerter',   'Five of Swords',   ['Konflikt','Niederlage','Hohlsieg'],       'Nicht jeder Sieg ist es wert.',                           'Frieden nach Konflikt, Wiedergutmachung.'),
+  minor('swords', 6,  'Sechs der Schwerter',  'Six of Swords',    ['Übergang','Heilung','Vorwärtsbewegung'],  'Du bewegst dich weg von Turbulenzen in ruhigeres Gewässer.','Festhalten, Schwierigkeiten beim Loslassen.'),
+  minor('swords', 7,  'Sieben der Schwerter', 'Seven of Swords',  ['Täuschung','List','Strategie'],           'Taktisches Vorgehen — aber pass auf vor Unehrlichkeit.',  'Betrüger entlarvt, Schuldgefühle.'),
+  minor('swords', 8,  'Acht der Schwerter',   'Eight of Swords',  ['Gefangenschaft','Begrenzung','Angst'],    'Du hältst dich selbst gefangen — die Befreiung liegt in dir.','Befreiung, neue Perspektive.'),
+  minor('swords', 9,  'Neun der Schwerter',   'Nine of Swords',   ['Angst','Albträume','Sorgen'],             'Nächtliche Ängste sind oft schlimmer als die Realität.',  'Hoffnung kehrt zurück, Heilung.'),
+  minor('swords', 10, 'Zehn der Schwerter',   'Ten of Swords',    ['Niederlage','Ende','Zusammenbruch'],      'Das Ende eines Zyklus — dunkel, aber notwendig.',         'Erholung, Neubeginn, Heilung.'),
+  minor('swords', 11, 'Bube der Schwerter',   'Page of Swords',   ['Neugier','Kommunikation','Wachheit'],     'Geistige Agilität und Neugierde — frag, lerne, erkunde.', 'Klatsch, übermäßige Kritik.'),
+  minor('swords', 12, 'Ritter der Schwerter', 'Knight of Swords', ['Entschlossenheit','Ehrgeiz','Tatkraft'],  'Voller Entschlossenheit voran — aber mit Bedacht.',       'Impulsivität, Rücksichtslosigkeit.'),
+  minor('swords', 13, 'Königin der Schwerter','Queen of Swords',  ['Unabhängigkeit','Klarheit','Direktheit'], 'Scharfer Verstand, direkte Kommunikation, klare Grenzen.',  'Bitterkeit, Kälte.'),
+  minor('swords', 14, 'König der Schwerter',  'King of Swords',   ['Autorität','Ethik','Intellekt'],          'Intellektuelle Führung und ethisches Handeln.',           'Manipulation, Tyrannei.'),
+];
+
+export const PENTACLES: TarotCard[] = [
+  minor('pentacles', 1,  'Ass der Pentakel',    'Ace of Pentacles',    ['Wohlstand','Neubeginn','Chancen'],     'Eine neue materielle Chance oder finanzieller Neubeginn.','Verpasste Gelegenheit, Instabilität.'),
+  minor('pentacles', 2,  'Zwei der Pentakel',   'Two of Pentacles',    ['Balance','Anpassung','Jonglieren'],   'Mehrere Dinge gleichzeitig im Gleichgewicht halten.',    'Überforderung, Unorganisiertheit.'),
+  minor('pentacles', 3,  'Drei der Pentakel',   'Three of Pentacles',  ['Teamarbeit','Handwerk','Lernen'],     'Kompetenz und Teamarbeit führen zu soliden Ergebnissen.','Fehlende Zusammenarbeit, mittelmäßige Arbeit.'),
+  minor('pentacles', 4,  'Vier der Pentakel',   'Four of Pentacles',   ['Sicherheit','Kontrolle','Geiz'],      'Festhalten an Sicherheit — aber ist es zu viel?',         'Loslassen, Großzügigkeit, Verlust.'),
+  minor('pentacles', 5,  'Fünf der Pentakel',   'Five of Pentacles',   ['Armut','Isolation','Verlust'],        'Materielle Not — aber du bist nicht allein.',             'Erholung, spirituelle Reichtum.'),
+  minor('pentacles', 6,  'Sechs der Pentakel',  'Six of Pentacles',    ['Großzügigkeit','Geben','Empfangen'],  'Geben und Nehmen in Balance.',                           'Schulden, Ungleichgewicht in der Großzügigkeit.'),
+  minor('pentacles', 7,  'Sieben der Pentakel', 'Seven of Pentacles',  ['Geduld','Bestandsaufnahme','Wachstum'],'Halte inne und bewerte deinen Fortschritt.',             'Ungeduld, fehlende Langzeitplanung.'),
+  minor('pentacles', 8,  'Acht der Pentakel',   'Eight of Pentacles',  ['Fleiß','Handwerk','Fokus'],           'Meisterschaft durch Übung und Hingabe.',                 'Perfektionismus, fehlende Motivation.'),
+  minor('pentacles', 9,  'Neun der Pentakel',   'Nine of Pentacles',   ['Luxus','Unabhängigkeit','Selbstgenüge'],'Materieller Erfolg durch eigene Kraft.',                'Scheinerfolg, Überabhängigkeit.'),
+  minor('pentacles', 10, 'Zehn der Pentakel',   'Ten of Pentacles',    ['Erbe','Familie','Wohlstand'],         'Dauerhafter Wohlstand und familiäre Stabilität.',        'Familienkonflikte um Erbe.'),
+  minor('pentacles', 11, 'Bube der Pentakel',   'Page of Pentacles',   ['Lernen','Ehrgeiz','Neustart'],        'Praktischer Lernender mit großen Träumen.',              'Träumerei ohne Handeln.'),
+  minor('pentacles', 12, 'Ritter der Pentakel', 'Knight of Pentacles', ['Routine','Beständigkeit','Methodik'], 'Zuverlässig, methodisch, ausdauernd.',                   'Sturheit, Langeweile.'),
+  minor('pentacles', 13, 'Königin der Pentakel','Queen of Pentacles',  ['Fürsorge','Praktizismus','Natur'],    'Erdende, fürsorgliche Energie verbunden mit der Natur.',  'Selbstvernachlässigung, materielle Fixierung.'),
+  minor('pentacles', 14, 'König der Pentakel',  'King of Pentacles',   ['Wohlstand','Führung','Stabilität'],   'Stabiler, erfolgreicher Anführer mit solider Grundlage.','Gier, Sturheit, Materialismus.'),
+];
+
+// ─── Full deck ────────────────────────────────────────────────────────────────
+export const ALL_CARDS: TarotCard[] = [
+  ...MAJOR_ARCANA,
+  ...CUPS,
+  ...WANDS,
+  ...SWORDS,
+  ...PENTACLES,
+];
+
+export function getCardById(id: string): TarotCard | undefined {
+  return ALL_CARDS.find((c) => c.id === id);
+}
+
+export function drawCards(count: number): TarotCard[] {
+  const shuffled = [...ALL_CARDS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map((card) => ({
+    ...card,
+    // Random orientation
+    orientation: Math.random() > 0.25 ? 'upright' : 'reversed',
+  } as any));
 }

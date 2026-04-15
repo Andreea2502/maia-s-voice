@@ -125,7 +125,8 @@ export default function OnboardingConsentScreen() {
     setLoading(true);
     setError(null);
     try {
-      const { data: { user }, error: userErr } = await supabase.auth.getUser();
+      const { data: { session }, error: userErr } = await supabase.auth.getSession();
+      const user = session?.user;
       if (userErr || !user) throw new Error('Nicht eingeloggt / Not authenticated');
 
       const { error: profileErr } = await supabase.from('user_profiles').update({
@@ -144,7 +145,7 @@ export default function OnboardingConsentScreen() {
         { user_id: user.id, consent_type: 'privacy_policy',           granted: consents.terms,     consent_text_version: '1.0' },
       ]);
 
-      router.replace('/(tabs)/');
+      router.replace('/(auth)/mode-select');
     } catch (err: any) {
       setError(err?.message ?? 'Unbekannter Fehler / Unknown error');
     } finally {
