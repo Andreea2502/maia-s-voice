@@ -88,8 +88,7 @@ export async function textToSpeech(params: {
       body: JSON.stringify({
         text: params.text,
         model_id: 'eleven_turbo_v2_5',
-        voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.15 },
-        language_code: params.language === 'en' ? 'en' : 'de',
+        voice_settings: { stability: 0.45, similarity_boost: 0.80 },
       }),
     }
   );
