@@ -30,7 +30,19 @@ export function useVoiceSession(moduleId: string = 'companion') {
       const ws = new WebSocket(token.wsUrl);
       wsRef.current = ws;
 
-      ws.onopen = () => setStatus('connected');
+      ws.onopen = () => {
+        setStatus('connected');
+        // Send system prompt + first message overrides if present
+        const overrides = (token as any).overrides;
+        if (overrides?.systemPrompt || overrides?.firstMessage) {
+          const msg: Record<string, unknown> = { type: 'conversation_initiation_client_data' };
+          const agentCfg: Record<string, unknown> = {};
+          if (overrides.systemPrompt) agentCfg.prompt = { prompt: overrides.systemPrompt };
+          if (overrides.firstMessage) agentCfg.first_message = overrides.firstMessage;
+          msg.conversation_config_override = { agent: agentCfg };
+          ws.send(JSON.stringify(msg));
+        }
+      };
 
       ws.onmessage = (event) => {
         try {

@@ -36,35 +36,35 @@ export async function createConversationalAISession(params: {
 
   const apiKey = Deno.env.get('ELEVENLABS_API_KEY')!;
 
-  const body: Record<string, unknown> = { agent_id: agentId };
-  if (params.systemPromptOverride) {
-    body.system_prompt_override = params.systemPromptOverride;
-  }
-  if (params.firstMessage) {
-    body.first_message = params.firstMessage;
-  }
+  // Step 1: Get a signed URL for the agent (GET endpoint)
+  const signedUrlRes = await fetch(
+    `${ELEVENLABS_API_BASE}/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
+    { headers: { 'xi-api-key': apiKey } }
+  );
 
-  const response = await fetch(`${ELEVENLABS_API_BASE}/convai/conversation/token`, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`ElevenLabs token error: ${response.status} ${text}`);
+  if (!signedUrlRes.ok) {
+    const text = await signedUrlRes.text();
+    throw new Error(`ElevenLabs signed URL error: ${signedUrlRes.status} ${text}`);
   }
 
-  const data = await response.json();
+  const { signed_url } = await signedUrlRes.json();
+
+  // Step 2: If we have overrides, append them as query params on the wss URL
+  // ElevenLabs signed URLs are wss:// — we return them directly; overrides are
+  // sent after connection via the conversation_initiation_client_data message.
+  const wsUrl: string = signed_url;
+  const sessionId = crypto.randomUUID();
+
   return {
-    token: data.token,
-    sessionId: data.session_id ?? crypto.randomUUID(),
+    token: signed_url,   // used by client as the wsUrl
+    sessionId,
     agentId,
-    wsUrl: `wss://api.elevenlabs.io/v1/convai/conversation?token=${data.token}`,
-  };
+    wsUrl,
+    // Pass overrides so client can send them after WS connect
+    ...(params.systemPromptOverride || params.firstMessage
+      ? { overrides: { systemPrompt: params.systemPromptOverride, firstMessage: params.firstMessage } }
+      : {}),
+  } as any;
 }
 
 export async function textToSpeech(params: {
