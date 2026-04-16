@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator,
-  Platform,
+  Platform, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -85,6 +85,15 @@ export default function TarotIndex() {
     setPlayingId(persona.id);
     const introText = persona.introText?.de ?? `Ich bin ${persona.name.de}. ${persona.description.de}`;
 
+    // iOS Safari fix: create & "unlock" Audio element immediately inside the user-gesture handler
+    // (async calls below would lose the gesture context and get blocked by autoplay policy)
+    let audio: HTMLAudioElement | null = null;
+    if (typeof window !== 'undefined') {
+      audio = new (window as any).Audio();
+      audio.preload = 'auto';
+      audioRef.current = audio;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('ui-tts', {
         body: { text: introText, personaId: persona.id },
@@ -92,28 +101,57 @@ export default function TarotIndex() {
 
       if (error || !data?.audio) {
         setPlayingId(null);
+        audioRef.current = null;
+        const errMsg: string = error?.message ?? data?.error ?? '';
+        if (errMsg.includes('quota_exceeded') || errMsg.includes('quota of') || data?.quota_exceeded) {
+          Alert.alert(
+            '🔇 Stimme nicht verfügbar',
+            'Das Sprach-Budget ist gerade erschöpft. Die Leserinnen kommen bald zurück — probiere es später nochmal!',
+            [{ text: 'OK' }]
+          );
+        }
         return;
       }
 
-      const src = `data:${data.mime_type ?? 'audio/mpeg'};base64,${data.audio}`;
+      if (typeof window !== 'undefined' && audio) {
+        // Convert base64 → Blob URL (more reliable than data URI on mobile Safari)
+        const binary = atob(data.audio);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: data.mime_type ?? 'audio/mpeg' });
+        const url = URL.createObjectURL(blob);
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const audio = new (window as any).Audio(src);
-        audioRef.current = audio;
-        audio.onended = () => { setPlayingId(null); audioRef.current = null; };
+        audio.src = url;
+        audio.onended = () => {
+          setPlayingId(null);
+          audioRef.current = null;
+          URL.revokeObjectURL(url);
+        };
         await audio.play();
       } else {
+        // Native fallback (expo-av + temp file)
+        const FileSystem = await import('expo-file-system');
         const { Audio } = await import('expo-av');
+        const tmpPath = `${FileSystem.cacheDirectory}intro_${persona.id}_${Date.now()}.mp3`;
+        await FileSystem.writeAsStringAsync(tmpPath, data.audio, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
         await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const { sound } = await Audio.Sound.createAsync({ uri: src });
+        const { sound } = await Audio.Sound.createAsync({ uri: tmpPath });
         audioRef.current = sound;
         sound.setOnPlaybackStatusUpdate((status: any) => {
-          if (status.didJustFinish) { setPlayingId(null); sound.unloadAsync(); }
+          if (status.didJustFinish) {
+            setPlayingId(null);
+            sound.unloadAsync();
+            FileSystem.deleteAsync(tmpPath, { idempotent: true }).catch(() => {});
+          }
         });
         await sound.playAsync();
       }
-    } catch (_) {
+    } catch (e) {
+      console.error('[handleIntro] playback error:', e);
       setPlayingId(null);
+      audioRef.current = null;
     }
   }
 

@@ -34,9 +34,12 @@ serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'TTS error';
     console.error('[ui-tts] ERROR:', message);
+
+    // Detect quota_exceeded → return 402 so client can handle gracefully
+    const isQuota = message.includes('quota_exceeded') || message.includes('quota of');
     return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: message, quota_exceeded: isQuota }),
+      { status: isQuota ? 402 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

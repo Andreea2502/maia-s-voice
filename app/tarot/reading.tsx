@@ -306,22 +306,38 @@ export default function ReadingScreen() {
         return;
       }
 
-      const src = `data:${data.mime_type ?? 'audio/mpeg'};base64,${data.audio}`;
-
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const audio = new (window as any).Audio(src);
-        audio.onended = () => setTtsLoading(false);
+      if (typeof window !== 'undefined') {
+        // Web (incl. mobile Safari via Vercel):
+        // Convert base64 → Blob URL for reliable mobile playback
+        const binary = atob(data.audio);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: data.mime_type ?? 'audio/mpeg' });
+        const url = URL.createObjectURL(blob);
+        const audio = new (window as any).Audio(url);
+        audio.onended = () => { setTtsLoading(false); URL.revokeObjectURL(url); };
         await audio.play();
       } else {
+        // Native: write to temp file first
+        const FileSystem = await import('expo-file-system');
         const { Audio } = await import('expo-av');
+        const tmpPath = `${FileSystem.cacheDirectory}reading_tts_${Date.now()}.mp3`;
+        await FileSystem.writeAsStringAsync(tmpPath, data.audio, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
         await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const { sound } = await Audio.Sound.createAsync({ uri: src });
+        const { sound } = await Audio.Sound.createAsync({ uri: tmpPath });
         sound.setOnPlaybackStatusUpdate((status: any) => {
-          if (status.didJustFinish) { setTtsLoading(false); sound.unloadAsync(); }
+          if (status.didJustFinish) {
+            setTtsLoading(false);
+            sound.unloadAsync();
+            FileSystem.deleteAsync(tmpPath, { idempotent: true }).catch(() => {});
+          }
         });
         await sound.playAsync();
       }
-    } catch (_) {
+    } catch (e) {
+      console.error('[handleTTS] playback error:', e);
       setTtsLoading(false);
     }
   }

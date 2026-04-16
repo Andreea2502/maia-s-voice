@@ -47,8 +47,9 @@ serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal error';
     console.error('[reading-tts] ERROR:', message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+    const isQuota = message.includes('quota_exceeded') || message.includes('quota of');
+    return new Response(JSON.stringify({ error: message, quota_exceeded: isQuota }), {
+      status: isQuota ? 402 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
