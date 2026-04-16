@@ -1,5 +1,4 @@
-export type SupportedLanguage =
-  | 'ar' | 'hi' | 'rom' | 'tr' | 'fa' | 'ro' | 'hu' | 'de' | 'en';
+export type SupportedLanguage = 'de' | 'en' | 'ro' | 'hu' | 'rom';
 
 export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'unlimited';
 

@@ -10,16 +10,12 @@ import { SupportedLanguage } from '@/types/user';
 import { C } from '@/lib/colors';
 import { CosmicBackground } from '@/components/ui/CosmicBackground';
 
-const LANGUAGE_DATA: Record<string, { flag: string; native: string; hint: string }> = {
-  de:  { flag: '🇩🇪', native: 'Deutsch',      hint: 'Bitte wähle deine Sprache' },
-  en:  { flag: '🇬🇧', native: 'English',      hint: 'Please choose your language' },
-  ar:  { flag: '🇸🇦', native: 'العربية',     hint: 'يرجى اختيار لغتك' },
-  tr:  { flag: '🇹🇷', native: 'Türkçe',      hint: 'Lütfen dilinizi seçin' },
-  ro:  { flag: '🇷🇴', native: 'Română',      hint: 'Vă rugăm să alegeți limba' },
-  hu:  { flag: '🇭🇺', native: 'Magyar',      hint: 'Kérem, válasszon nyelvet' },
-  hi:  { flag: '🇮🇳', native: 'हिन्दी',      hint: 'कृपया अपनी भाषा चुनें' },
-  fa:  { flag: '🇮🇷', native: 'دری / فارسی', hint: 'لطفاً زبان خود را انتخاب کنید' },
-  rom: { flag: '🏕️',  native: 'Romani',      hint: 'Te rog, cher čhibakiri' },
+const LANGUAGE_DATA: Record<string, { flag: string; native: string }> = {
+  de:  { flag: '🇩🇪', native: 'Deutsch'  },
+  en:  { flag: '🇬🇧', native: 'English'  },
+  ro:  { flag: '🇷🇴', native: 'Română'   },
+  hu:  { flag: '🇭🇺', native: 'Magyar'   },
+  rom: { flag: '🏕️',  native: 'Romani'   },
 };
 
 export default function LanguageSelectScreen() {

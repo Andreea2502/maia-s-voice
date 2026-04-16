@@ -1,8 +1,0 @@
-{
-  "common": { "continue": "متابعة", "back": "رجوع", "cancel": "إلغاء", "save": "حفظ", "delete": "حذف", "confirm": "تأكيد", "close": "إغلاق", "loading": "جارٍ التحميل...", "error": "خطأ", "retry": "إعادة المحاولة", "yes": "نعم", "no": "لا", "or": "أو" },
-  "auth": { "title": "التاروت – أوراقك", "subtitle": "اكتشفي رسائلك", "login_button": "تسجيل الدخول", "signup_button": "إنشاء حساب" },
-  "onboarding": { "choose_persona_title": "اختاري مرشدتك", "choose_persona_subtitle": "لكل قارئة طاقتها الخاصة. من تشعرين بالتناغم معها؟", "persona_select": "اختيار", "persona_selected": "تم الاختيار", "choose_input_title": "كيف تريدين التواصل؟", "voice_option_title": "بالصوت", "voice_option_desc": "تحدثي مباشرةً مع قارئتك.", "text_option_title": "بالنص", "text_option_desc": "اكتبي ردودك.", "voice_start": "بدء المحادثة", "text_start": "بدء محادثة نصية", "listening": "يستمع...", "speaking": "يتحدث...", "thinking": "يفكر...", "tap_to_speak": "اضغطي للتحدث", "end_conversation": "إنهاء المحادثة", "proceed_to_cards": "الانتقال إلى الأوراق", "type_here": "اكتبي هنا...", "send": "إرسال" },
-  "reading": { "new_reading": "قراءة جديدة", "choose_spread": "اختيار طريقة التوزيع", "virtual_draw": "سحب افتراضي", "photo_upload": "تصوير الأوراق", "get_interpretation": "الحصول على التفسير", "generating": "قارئتك تفسّر الأوراق...", "interpretation_title": "تفسيرك", "upright": "منتصب", "reversed": "معكوس" },
-  "home": { "daily_card": "ورقة اليوم", "start_reading": "قراءة جديدة", "no_readings": "لا توجد قراءات بعد.", "upgrade_prompt": "فتح المزيد من القراءات" },
-  "errors": { "network": "خطأ في الشبكة.", "limit_reached": "تم الوصول إلى الحد الشهري." }
-}

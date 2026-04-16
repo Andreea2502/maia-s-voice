@@ -3,29 +3,22 @@ import { initReactI18next } from 'react-i18next';
 import { I18nManager } from 'react-native';
 import * as Localization from 'expo-localization';
 
-import ar from '../locales/ar.json';
-import hi from '../locales/hi.json';
+import de  from '../locales/de.json';
+import en  from '../locales/en.json';
+import ro  from '../locales/ro.json';
+import hu  from '../locales/hu.json';
 import rom from '../locales/rom.json';
-import tr from '../locales/tr.json';
-import fa from '../locales/fa.json';
-import ro from '../locales/ro.json';
-import hu from '../locales/hu.json';
-import de from '../locales/de.json';
-import en from '../locales/en.json';
 
-export const RTL_LANGUAGES = ['ar', 'fa'];
-export const SUPPORTED_LANGUAGES = ['ar', 'hi', 'rom', 'tr', 'fa', 'ro', 'hu', 'de', 'en'] as const;
+// European languages only — RTL languages (ar, fa) → separate app in Phase 2
+export const RTL_LANGUAGES: string[] = [];
+export const SUPPORTED_LANGUAGES = ['de', 'en', 'ro', 'hu', 'rom'] as const;
 
 export const LANGUAGE_LABELS: Record<string, string> = {
-  ar: 'العربية',
-  hi: 'हिन्दी',
+  de:  'Deutsch',
+  en:  'English',
+  ro:  'Română',
+  hu:  'Magyar',
   rom: 'Romani',
-  tr: 'Türkçe',
-  fa: 'دری / فارسی',
-  ro: 'Română',
-  hu: 'Magyar',
-  de: 'Deutsch',
-  en: 'English',
 };
 
 export function isRTL(lang: string): boolean {
@@ -33,9 +26,9 @@ export function isRTL(lang: string): boolean {
 }
 
 export function setAppLanguage(lang: string): void {
-  const rtl = isRTL(lang);
-  I18nManager.forceRTL(rtl);
-  I18nManager.allowRTL(rtl);
+  // All supported languages are LTR — no RTL flip needed
+  I18nManager.forceRTL(false);
+  I18nManager.allowRTL(false);
   i18n.changeLanguage(lang);
 }
 
@@ -50,15 +43,11 @@ i18n.use(initReactI18next).init({
   supportedLngs: [...SUPPORTED_LANGUAGES],
   interpolation: { escapeValue: false },
   resources: {
-    ar: { translation: ar },
-    hi: { translation: hi },
+    de:  { translation: de  },
+    en:  { translation: en  },
+    ro:  { translation: ro  },
+    hu:  { translation: hu  },
     rom: { translation: rom },
-    tr: { translation: tr },
-    fa: { translation: fa },
-    ro: { translation: ro },
-    hu: { translation: hu },
-    de: { translation: de },
-    en: { translation: en },
   },
 });
 
