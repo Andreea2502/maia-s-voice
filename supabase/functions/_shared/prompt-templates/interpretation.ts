@@ -66,7 +66,7 @@ export function getInterpretationPrompt(params: InterpretationParams): string {
   const cardList = params.cards
     .map(
       (c, i) =>
-        `Position ${i + 1} — ${c.positionMeaning}: "${c.cardName}" (${c.orientation === 'upright' ? 'aufrecht' : 'umgekehrt'})${c.meaning ? `\n  Bedeutung: ${c.meaning}` : ''}`
+        `Position ${i + 1} — ${c.positionMeaning}: "${c.cardName}" (${c.orientation === 'upright' ? 'aufrecht' : 'umgekehrt'})${c.meaning ? `\n  Bedeutung aus DB: ${c.meaning}` : ''}`
     )
     .join('\n\n');
 
@@ -97,26 +97,36 @@ ${memorySection}
 ## Gezogene Karten
 ${cardList}
 
-## Deine Aufgabe
+## Ausgabe-Anweisung
 
-Schreibe eine Deutung, die sich wirklich auf DIESE Person und IHRE konkrete Situation bezieht.
+Antworte AUSSCHLIESSLICH mit einem JSON-Objekt — kein Text davor oder danach, keine Markdown-Codeblöcke, kein \`\`\`json.
+Nur reines, direkt parsebares JSON.
 
-${hasQuestion ? `Beginne direkt mit der Frage der Person — greife ihren genauen Wortlaut auf.` : 'Beginne mit den Karten direkt.'}
-${hasOnboarding ? `Beziehe dich auf das, was die Person im Vorgespräch erzählt hat — konkret, nicht abstrakt.` : ''}
+{
+  "opening": "${hasQuestion ? 'Greife die Frage der Person im ersten Satz direkt auf' : 'Steige direkt mit der Energie der Karten ein'} — 1-2 prägnante Sätze, konkret auf diese Person bezogen",
+  "cards": [
+    {
+      "name": "Exakter Kartenname aus der Legetechnik",
+      "position": "Positionsbezeichnung (z.B. Vergangenheit, Unterbewusstsein, ...)",
+      "orientation": "aufrecht oder umgekehrt",
+      "interpretation": "Was bedeutet genau diese Karte in genau dieser Position für genau diese Person? 2-3 direkte, konkrete Sätze. Bezug auf Vorgespräch wenn vorhanden.",
+      "classic_meaning": "Klassische Tarot-Bedeutung dieser Karte — kurz und präzise, 1-2 Sätze. Nutze die DB-Bedeutung als Basis.",
+      "anecdote": "Eine faszinierende historische, mythologische oder kulturelle Anekdote zu dieser Karte. 1-2 Sätze."
+    }
+  ],
+  "synthesis": "Was sagen die Karten zusammen? Spannungen, Bögen, übergeordnete Geschichte. 2-3 Sätze.",
+  "core_message": "Kernbotschaft: Was kann die Person jetzt konkret damit anfangen? Praktisch, nicht nur inspirierend. 1-2 Sätze.",
+  "questions": [
+    "Erste echte Reflexionsfrage — lädt zum Nachdenken ein, kein Ratschlag",
+    "Zweite Reflexionsfrage"
+  ]
+}
 
-**Struktur:**
-1. Jede Karte einzeln deuten — was bedeutet sie in DIESER Position für DIESE Person?
-2. Was sagen die Karten zusammen — gibt es Spannungen, Bestätigungen, eine Geschichte?
-3. Kernbotschaft: Was kann die Person jetzt damit anfangen? Praktisch, nicht nur inspirierend.
-4. Eine oder zwei echte Fragen zum Nachdenken (keine Ratschläge).
+WICHTIG: Das JSON muss exakt ${params.cards.length} Einträge im "cards"-Array haben — einen pro gezogener Karte.
 
-**Stil:**
-- Sprache: ${lang === 'de' ? 'Deutsch' : lang}
-- Ton: ${PERSONA_TONE[params.personaId ?? 'luna']}
-- Direkt und konkret — keine blumigen Umschreibungen, keine Allgemeinplätze
-- Sätze kurz halten. Auf den Punkt kommen.
-- Keine Phrasen wie "Die Karten zeigen...", "Das Universum sagt...", "Deine Seele..."
-- Länge: 400–600 Wörter`;
+Sprache: ${lang === 'de' ? 'Deutsch' : lang}
+Stil: ${PERSONA_TONE[params.personaId ?? 'luna']}
+Keine Phrasen wie "Die Karten zeigen...", "Das Universum sagt...", "Deine Seele..."`;
 }
 
 // ─── Persona style injections ─────────────────────────────────

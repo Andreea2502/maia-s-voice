@@ -102,13 +102,45 @@ serve(async (req) => {
     });
 
     // ── Gemini für Deutung ──────────────────────────────────────────
-    const interpretation = await generateText({
+    const rawOutput = await generateText({
       systemPrompt,
       userMessage: lang === 'de'
         ? 'Bitte interpretiere die Karten für diese Person.'
         : 'Please interpret the cards for this person.',
       maxOutputTokens: 3000,
     });
+
+    // ── JSON parsen — Gemini gibt manchmal ```json ... ``` zurück ───
+    let structured: any = null;
+    let interpretation = rawOutput;
+
+    try {
+      let jsonStr = rawOutput.trim();
+      // Strip possible markdown code fences
+      if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr
+          .replace(/^```(?:json)?\s*/m, '')
+          .replace(/\s*```\s*$/m, '')
+          .trim();
+      }
+      structured = JSON.parse(jsonStr);
+
+      // Build plain text for TTS from structured parts
+      const parts: string[] = [];
+      if (structured.opening) parts.push(structured.opening);
+      for (const card of (structured.cards ?? [])) {
+        if (card.interpretation) parts.push(`${card.name}: ${card.interpretation}`);
+      }
+      if (structured.synthesis) parts.push(structured.synthesis);
+      if (structured.core_message) parts.push(structured.core_message);
+      if (structured.questions?.length) {
+        parts.push(structured.questions.join(' '));
+      }
+      interpretation = parts.filter(Boolean).join('\n\n');
+    } catch (_) {
+      // Fallback: keep raw output as plain text, no structured data
+      structured = null;
+    }
 
     // ── Erinnerungen extrahieren ────────────────────────────────────
     let extractedMemories: any[] = [];
@@ -150,7 +182,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        interpretation,
+        interpretation,         // plain text for TTS
+        structured,             // parsed JSON for rich UI rendering (null if parse failed)
         memories_extracted: extractedMemories,
         model_used: 'gemini-2.5-flash',
       }),

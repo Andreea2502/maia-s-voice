@@ -18,6 +18,16 @@ const mc = MODULE_COLORS.tarot;
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 
+// Quick-pick topic chips — tap to skip typing and go straight to cards
+const QUICK_TOPICS = [
+  { icon: '💕', label: 'Liebe & Beziehung' },
+  { icon: '💼', label: 'Beruf & Erfolg' },
+  { icon: '🌱', label: 'Persönlichkeit & Wachstum' },
+  { icon: '🧭', label: 'Eine Entscheidung treffen' },
+  { icon: '💸', label: 'Geld & Finanzen' },
+  { icon: '🔮', label: 'Was kommt als Nächstes?' },
+];
+
 export default function TarotOnboardingScreen() {
   const { persona: personaParam, profileSummary: profileSummaryEncoded } =
     useLocalSearchParams<{ persona: string; profileSummary?: string }>();
@@ -103,8 +113,8 @@ export default function TarotOnboardingScreen() {
     }
   }
 
-  function goToCards() {
-    const summary = messages
+  function goToCards(customSummary?: string) {
+    const summary = customSummary ?? messages
       .filter((m) => m.role === 'user')
       .map((m) => m.content)
       .join(' | ');
@@ -117,6 +127,11 @@ export default function TarotOnboardingScreen() {
         ...(profileSummary ? { profileSummary: encodeURIComponent(profileSummary) } : {}),
       },
     });
+  }
+
+  function handleQuickTopic(topic: string) {
+    // Skip conversation entirely — go straight to cards with topic as summary
+    goToCards(topic);
   }
 
   return (
@@ -171,11 +186,31 @@ export default function TarotOnboardingScreen() {
             )}
           </ScrollView>
 
+          {/* Quick topic chips — show when conversation hasn't started yet */}
+          {messages.filter((m) => m.role === 'user').length === 0 && !loading && (
+            <View style={styles.quickWrap}>
+              <Text style={styles.quickLabel}>Oder wähle ein Thema:</Text>
+              <View style={styles.quickChips}>
+                {QUICK_TOPICS.map((t) => (
+                  <TouchableOpacity
+                    key={t.label}
+                    style={[styles.quickChip, { borderColor: persona.accentColor + '55' }]}
+                    onPress={() => handleQuickTopic(t.label)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.quickChipIcon}>{t.icon}</Text>
+                    <Text style={[styles.quickChipText, { color: persona.accentColor }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* "Weiter zu den Karten" — appears after enough exchanges */}
           {ready && (
             <TouchableOpacity
               style={[styles.continueBtn, { backgroundColor: persona.accentColor }]}
-              onPress={goToCards}
+              onPress={() => goToCards()}
               activeOpacity={0.85}
             >
               <Text style={styles.continueBtnText}>Zu den Karten →</Text>
@@ -183,8 +218,8 @@ export default function TarotOnboardingScreen() {
           )}
 
           {/* Skip */}
-          {!ready && messages.length > 0 && (
-            <TouchableOpacity style={styles.skipBtn} onPress={goToCards}>
+          {!ready && messages.filter((m) => m.role === 'user').length > 0 && (
+            <TouchableOpacity style={styles.skipBtn} onPress={() => goToCards()}>
               <Text style={styles.skipText}>Gespräch überspringen →</Text>
             </TouchableOpacity>
           )}
@@ -268,6 +303,17 @@ const styles = StyleSheet.create({
 
   skipBtn:  { alignItems: 'center', paddingVertical: 8 },
   skipText: { color: C.textMuted, fontSize: 13 },
+
+  quickWrap: { paddingHorizontal: 14, paddingBottom: 4, gap: 10 },
+  quickLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 1.5 },
+  quickChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, paddingHorizontal: 12,
+    backgroundColor: mc.surface, borderRadius: 20, borderWidth: 1.5,
+  },
+  quickChipIcon: { fontSize: 14 },
+  quickChipText: { fontSize: 13, fontWeight: '700' },
 
   inputRow: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
