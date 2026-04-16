@@ -30,6 +30,9 @@ export async function createConversationalAISession(params: {
   systemPromptOverride?: string;
   firstMessage?: string;
 }): Promise<{ token: string; sessionId: string; agentId: string; wsUrl: string }> {
+  const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
+  if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
+
   const agentId = (params.module === 'tarot' && params.personaId)
     ? PERSONA_AGENT_MAP[params.personaId]
     : MASTER_AGENT_ID;
@@ -38,12 +41,22 @@ export async function createConversationalAISession(params: {
     throw new Error(`No agent ID configured for module=${params.module} personaId=${params.personaId}`);
   }
 
-  // Return public WebSocket URL directly.
-  // The agent must be set to "Anyone with agent link" in the ElevenLabs dashboard.
-  // Auth is enforced server-side (Supabase auth + voice_consent check above).
-  // Overrides (system prompt / first message) are sent by the client after WS connect
-  // via the conversation_initiation_client_data message.
-  const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(agentId)}`;
+  // Get a signed WebSocket URL from ElevenLabs.
+  // This works for both public and private agents, and embeds short-lived auth
+  // so the client never needs the API key directly.
+  const signedRes = await fetch(
+    `${ELEVENLABS_API_BASE}/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
+    { headers: { 'xi-api-key': apiKey } }
+  );
+
+  if (!signedRes.ok) {
+    const err = await signedRes.text();
+    throw new Error(`ElevenLabs signed URL error ${signedRes.status}: ${err.slice(0, 200)}`);
+  }
+
+  const { signed_url: wsUrl } = await signedRes.json();
+  if (!wsUrl) throw new Error('ElevenLabs returned no signed_url');
+
   const sessionId = crypto.randomUUID();
 
   return {
