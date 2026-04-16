@@ -59,8 +59,9 @@ serve(async (req) => {
         reading_type,
         spread_type,
         question,
-        interpretation_language: profile.preferred_language,
+        interpretation_language: profile.preferred_language ?? 'de',
         input_mode,
+        voice_used: input_mode === 'voice',
         cards: [],
       })
       .select()
