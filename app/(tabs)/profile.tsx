@@ -125,6 +125,7 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName]     = useState('');
   const [personaId, setPersonaId]         = useState<PersonaId>('luna');
   const [tier, setTier]                   = useState('free');
+  const [isAdmin, setIsAdmin]             = useState(false);
   const [birthDate, setBirthDate]         = useState<string | null>(null);
   const [birthCity, setBirthCity]         = useState('');
   const [profileComplete, setProfileComplete] = useState(false);
@@ -149,7 +150,7 @@ export default function ProfileScreen() {
       const { data } = await supabase
         .from('user_profiles')
         .select(`
-          display_name, preferred_persona, subscription_tier,
+          display_name, preferred_persona, subscription_tier, is_admin,
           birth_date, birth_city,
           profile_completed, personal_profile,
           daily_horoscope_enabled, weekly_horoscope_enabled
@@ -162,6 +163,7 @@ export default function ProfileScreen() {
         setDisplayName(pp.displayName ?? data.display_name ?? '');
         setPersonaId((data.preferred_persona ?? 'luna') as PersonaId);
         setTier(data.subscription_tier ?? 'free');
+        setIsAdmin(data.is_admin ?? false);
         setBirthDate(data.birth_date ?? null);
         setBirthCity(data.birth_city ?? '');
         setProfileComplete(data.profile_completed ?? false);
@@ -360,6 +362,21 @@ export default function ProfileScreen() {
           onPress={() => router.push('/settings/subscription')}
         />
       </View>
+
+      {/* ── Admin Panel ───────────────────────────────────────────────── */}
+      {isAdmin && (
+        <>
+          <SectionHeader title="ADMINISTRATION" />
+          <View style={styles.card}>
+            <SettingsRow
+              icon="🔧"
+              label="Admin Panel"
+              value="User & Zugänge verwalten"
+              onPress={() => router.push('/admin' as any)}
+            />
+          </View>
+        </>
+      )}
 
       {/* ── Datenschutz ───────────────────────────────────────────────── */}
       <SectionHeader title="DATENSCHUTZ" />

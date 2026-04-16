@@ -121,6 +121,9 @@ export default function RootLayout() {
         <Stack.Screen name="astrology/questionnaire"   options={{ title: 'Persönliches Profil' }} />
         <Stack.Screen name="astrology/reading"         options={{ title: 'Dein Horoskop ✧', headerBackVisible: false }} />
 
+        {/* Admin */}
+        <Stack.Screen name="admin/index"               options={{ headerShown: false }} />
+
         {/* Settings */}
         <Stack.Screen name="settings/language"         options={{ title: 'Sprache' }} />
         <Stack.Screen name="settings/persona"          options={{ title: 'Leserin wählen' }} />
