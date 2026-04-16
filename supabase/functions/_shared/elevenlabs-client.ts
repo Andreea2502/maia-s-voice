@@ -34,33 +34,23 @@ export async function createConversationalAISession(params: {
     ? PERSONA_AGENT_MAP[params.personaId]
     : MASTER_AGENT_ID;
 
-  const apiKey = Deno.env.get('ELEVENLABS_API_KEY')!;
-
-  // Step 1: Get a signed URL for the agent (GET endpoint)
-  const signedUrlRes = await fetch(
-    `${ELEVENLABS_API_BASE}/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
-    { headers: { 'xi-api-key': apiKey } }
-  );
-
-  if (!signedUrlRes.ok) {
-    const text = await signedUrlRes.text();
-    throw new Error(`ElevenLabs signed URL error: ${signedUrlRes.status} ${text}`);
+  if (!agentId) {
+    throw new Error(`No agent ID configured for module=${params.module} personaId=${params.personaId}`);
   }
 
-  const { signed_url } = await signedUrlRes.json();
-
-  // Step 2: If we have overrides, append them as query params on the wss URL
-  // ElevenLabs signed URLs are wss:// — we return them directly; overrides are
-  // sent after connection via the conversation_initiation_client_data message.
-  const wsUrl: string = signed_url;
+  // Return public WebSocket URL directly.
+  // The agent must be set to "Anyone with agent link" in the ElevenLabs dashboard.
+  // Auth is enforced server-side (Supabase auth + voice_consent check above).
+  // Overrides (system prompt / first message) are sent by the client after WS connect
+  // via the conversation_initiation_client_data message.
+  const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(agentId)}`;
   const sessionId = crypto.randomUUID();
 
   return {
-    token: signed_url,   // used by client as the wsUrl
+    token: wsUrl,
     sessionId,
     agentId,
     wsUrl,
-    // Pass overrides so client can send them after WS connect
     ...(params.systemPromptOverride || params.firstMessage
       ? { overrides: { systemPrompt: params.systemPromptOverride, firstMessage: params.firstMessage } }
       : {}),
@@ -95,6 +85,7 @@ export async function textToSpeech(params: {
 
   if (!response.ok) {
     const err = await response.text();
+    console.error(`ElevenLabs TTS error — status: ${response.status}, voiceId: ${voiceId}, body: ${err}`);
     throw new Error(`ElevenLabs TTS error ${response.status}: ${err}`);
   }
 

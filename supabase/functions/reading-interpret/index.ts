@@ -107,7 +107,7 @@ serve(async (req) => {
       userMessage: lang === 'de'
         ? 'Bitte interpretiere die Karten für diese Person.'
         : 'Please interpret the cards for this person.',
-      maxOutputTokens: 1400,
+      maxOutputTokens: 3000,
     });
 
     // ── Erinnerungen extrahieren ────────────────────────────────────

@@ -37,8 +37,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="readings"
         options={{
-          title: 'Verlauf',
-          tabBarLabel: 'Verlauf',
+          title: 'Deutungen',
+          tabBarLabel: 'Deutungen',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>◈</Text>,
         }}
       />

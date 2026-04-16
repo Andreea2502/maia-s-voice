@@ -108,6 +108,11 @@ export default function AstrologyIndex() {
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+        {/* Back to home */}
+        <TouchableOpacity style={{ alignSelf: 'flex-start', paddingVertical: 4 }} onPress={() => router.replace('/(tabs)/')} activeOpacity={0.7}>
+          <Text style={{ color: '#888', fontSize: 14, fontWeight: '600' }}>← Hauptmenü</Text>
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.icon}>✧</Text>

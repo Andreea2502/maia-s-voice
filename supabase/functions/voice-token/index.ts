@@ -139,6 +139,7 @@ serve(async (req) => {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal error';
+    console.error('[voice-token] ERROR:', message);
     const status = message === 'Unauthorized' ? 401 : 500;
     return new Response(JSON.stringify({ error: message }), {
       status,

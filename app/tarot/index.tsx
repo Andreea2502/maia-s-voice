@@ -1,12 +1,13 @@
 // Tarot Module — Entry Screen with Profile Integration
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { C, MODULE_COLORS } from '@/lib/colors';
-import { PERSONAS } from '@/lib/personas';
+import { PERSONAS, Persona } from '@/lib/personas';
 
 const mc = MODULE_COLORS.tarot;
 
@@ -22,6 +23,8 @@ interface PersonalProfile {
 export default function TarotIndex() {
   const [profile, setProfile] = useState<PersonalProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<any>(null);
 
   useEffect(() => {
     loadProfile();
@@ -66,6 +69,54 @@ export default function TarotIndex() {
     }
   }
 
+  async function handleIntro(persona: Persona) {
+    if (playingId) {
+      // Stop current playback
+      if (audioRef.current) {
+        try { audioRef.current.pause?.(); } catch (_) {}
+        audioRef.current = null;
+      }
+      if (playingId === persona.id) {
+        setPlayingId(null);
+        return;
+      }
+    }
+
+    setPlayingId(persona.id);
+    const introText = persona.introText?.de ?? `Ich bin ${persona.name.de}. ${persona.description.de}`;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ui-tts', {
+        body: { text: introText, personaId: persona.id },
+      });
+
+      if (error || !data?.audio) {
+        setPlayingId(null);
+        return;
+      }
+
+      const src = `data:${data.mime_type ?? 'audio/mpeg'};base64,${data.audio}`;
+
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const audio = new (window as any).Audio(src);
+        audioRef.current = audio;
+        audio.onended = () => { setPlayingId(null); audioRef.current = null; };
+        await audio.play();
+      } else {
+        const { Audio } = await import('expo-av');
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        const { sound } = await Audio.Sound.createAsync({ uri: src });
+        audioRef.current = sound;
+        sound.setOnPlaybackStatusUpdate((status: any) => {
+          if (status.didJustFinish) { setPlayingId(null); sound.unloadAsync(); }
+        });
+        await sound.playAsync();
+      }
+    } catch (_) {
+      setPlayingId(null);
+    }
+  }
+
   return (
     <View style={styles.root}>
       <View style={styles.bg} />
@@ -74,6 +125,11 @@ export default function TarotIndex() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Back to home */}
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)/')} activeOpacity={0.7}>
+          <Text style={styles.backBtnText}>← Hauptmenü</Text>
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.icon}>✦</Text>
@@ -119,28 +175,43 @@ export default function TarotIndex() {
         {/* Persona selector */}
         <Text style={styles.sectionLabel}>LESERIN WÄHLEN</Text>
         <View style={styles.personaList}>
-          {PERSONAS.map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={styles.personaCard}
-              onPress={() => handlePersonaPress(p.id)}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.personaAccent, { backgroundColor: p.accentColor + '33' }]}>
-                <Text style={[styles.personaInitial, { color: p.accentColor }]}>
-                  {p.name.de[0]}
-                </Text>
+          {PERSONAS.map((p) => {
+            const isPlaying = playingId === p.id;
+            return (
+              <View key={p.id} style={styles.personaCardWrap}>
+                <TouchableOpacity
+                  style={styles.personaCard}
+                  onPress={() => handlePersonaPress(p.id)}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.personaAccent, { backgroundColor: p.accentColor + '33' }]}>
+                    <Text style={[styles.personaInitial, { color: p.accentColor }]}>
+                      {p.name.de[0]}
+                    </Text>
+                  </View>
+                  <View style={styles.personaText}>
+                    <Text style={styles.personaName}>{p.name.de}</Text>
+                    <Text style={styles.personaTagline}>{p.tagline.de}</Text>
+                    <Text style={styles.personaDesc} numberOfLines={2}>
+                      {p.description.de}
+                    </Text>
+                  </View>
+                  <Text style={[styles.personaArrow, { color: p.accentColor }]}>→</Text>
+                </TouchableOpacity>
+
+                {/* Intro button */}
+                <TouchableOpacity
+                  style={[styles.introBtn, { borderColor: p.accentColor + '55' }]}
+                  onPress={() => handleIntro(p)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.introBtnText, { color: p.accentColor }]}>
+                    {isPlaying ? '⏹ Stopp' : '🔊 Vorstellen'}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <View style={styles.personaText}>
-                <Text style={styles.personaName}>{p.name.de}</Text>
-                <Text style={styles.personaTagline}>{p.tagline.de}</Text>
-                <Text style={styles.personaDesc} numberOfLines={2}>
-                  {p.description.de}
-                </Text>
-              </View>
-              <Text style={[styles.personaArrow, { color: p.accentColor }]}>→</Text>
-            </TouchableOpacity>
-          ))}
+            );
+          })}
         </View>
 
         {/* Phase 2 note */}
@@ -165,7 +236,10 @@ const styles = StyleSheet.create({
 
   content: { padding: 24, gap: 20, paddingBottom: 48 },
 
-  header: { alignItems: 'center', gap: 8, paddingVertical: 16 },
+  backBtn: { alignSelf: 'flex-start', paddingVertical: 4 },
+  backBtnText: { color: C.textMuted, fontSize: 14, fontWeight: '600' },
+
+  header: { alignItems: 'center', gap: 8, paddingVertical: 8 },
   icon:   { fontSize: 44, color: mc.primary },
   title:  { fontSize: 32, fontWeight: '800', color: C.white },
   sub:    { fontSize: 14, color: C.textSec, textAlign: 'center' },
@@ -190,7 +264,8 @@ const styles = StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 1.8,
   },
 
-  personaList: { gap: 12 },
+  personaList: { gap: 16 },
+  personaCardWrap: { gap: 6 },
   personaCard: {
     backgroundColor: mc.surface,
     borderRadius: 18, borderWidth: 1.5, borderColor: mc.border,
@@ -206,6 +281,14 @@ const styles = StyleSheet.create({
   personaTagline:{ fontSize: 12, color: C.textSec, fontWeight: '600' },
   personaDesc:   { fontSize: 12, color: C.textMuted, lineHeight: 17 },
   personaArrow:  { fontSize: 18, fontWeight: '700' },
+
+  introBtn: {
+    alignSelf: 'flex-start', marginLeft: 8,
+    paddingVertical: 6, paddingHorizontal: 14,
+    borderRadius: 10, borderWidth: 1.5,
+    backgroundColor: mc.surface,
+  },
+  introBtnText: { fontSize: 12, fontWeight: '700' },
 
   phase2Note: {
     backgroundColor: mc.surface,

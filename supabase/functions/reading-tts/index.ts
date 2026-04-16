@@ -46,6 +46,7 @@ serve(async (req) => {
 
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal error';
+    console.error('[reading-tts] ERROR:', message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
