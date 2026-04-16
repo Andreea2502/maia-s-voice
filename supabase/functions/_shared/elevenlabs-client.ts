@@ -42,20 +42,36 @@ export async function createConversationalAISession(params: {
   }
 
   // Get a signed WebSocket URL from ElevenLabs.
-  // This works for both public and private agents, and embeds short-lived auth
-  // so the client never needs the API key directly.
-  const signedRes = await fetch(
-    `${ELEVENLABS_API_BASE}/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
-    { headers: { 'xi-api-key': apiKey } }
-  );
+  // Signed URLs embed a short-lived token so the client never needs the API key directly.
+  // Works for both public and private agents.
+  let wsUrl: string;
 
-  if (!signedRes.ok) {
-    const err = await signedRes.text();
-    throw new Error(`ElevenLabs signed URL error ${signedRes.status}: ${err.slice(0, 200)}`);
+  try {
+    const signedRes = await fetch(
+      `${ELEVENLABS_API_BASE}/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
+      { headers: { 'xi-api-key': apiKey } }
+    );
+
+    if (!signedRes.ok) {
+      const errBody = await signedRes.text();
+      console.error(`[elevenlabs] get_signed_url failed ${signedRes.status}: ${errBody.slice(0, 300)}`);
+      // Fallback: try the public (unsigned) URL — only works if agent is set to public access
+      wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(agentId)}`;
+      console.warn('[elevenlabs] Falling back to public WS URL');
+    } else {
+      const json = await signedRes.json();
+      wsUrl = json.signed_url;
+      if (!wsUrl) {
+        console.error('[elevenlabs] get_signed_url returned no signed_url:', JSON.stringify(json));
+        wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(agentId)}`;
+      } else {
+        console.log(`[elevenlabs] Got signed URL for agent ${agentId}`);
+      }
+    }
+  } catch (fetchErr) {
+    console.error('[elevenlabs] get_signed_url fetch threw:', fetchErr);
+    wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${encodeURIComponent(agentId)}`;
   }
-
-  const { signed_url: wsUrl } = await signedRes.json();
-  if (!wsUrl) throw new Error('ElevenLabs returned no signed_url');
 
   const sessionId = crypto.randomUUID();
 

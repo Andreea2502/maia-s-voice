@@ -10,7 +10,7 @@ serve(async (req) => {
   try {
     const { supabase, userId } = await getOptionalUser(req);
     const body = await req.json();
-    const { spread_type = 'three_card', question, reading_type = 'virtual', input_mode = 'voice' } = body;
+    const { spread_type = 'three_card', question, reading_type = 'tarot', input_mode = 'voice' } = body;
 
     // Guest mode — no DB, no limits
     if (!userId) {
@@ -26,24 +26,28 @@ serve(async (req) => {
     }
 
     // Fetch profile + check reading limits
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('subscription_tier, readings_this_month, life_context_summary, preferred_language')
       .eq('id', userId)
       .single();
 
+    if (profileError) {
+      console.error('[reading-start] Profile fetch error:', JSON.stringify(profileError));
+      throw new Error(`Profile fetch failed: ${profileError.message}`);
+    }
     if (!profile) throw new Error('Profile not found');
 
-    const LIMITS: Record<string, number> = { free: 2, basic: 10, premium: 30, unlimited: -1 };
-    const limit = LIMITS[profile.subscription_tier] ?? 2;
-    if (limit !== -1 && profile.readings_this_month >= limit) {
+    const LIMITS: Record<string, number> = { free: 10, basic: 30, premium: 100, unlimited: -1 };
+    const limit = LIMITS[profile.subscription_tier ?? 'free'] ?? 10;
+    if (limit !== -1 && (profile.readings_this_month ?? 0) >= limit) {
       return new Response(
         JSON.stringify({ error: 'Monthly reading limit reached', upgrade_required: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch relevant session memories for context
+    // Fetch relevant session memories for context (non-fatal)
     const { data: memories } = await supabase
       .from('session_memory')
       .select('content, memory_type, importance_score')
@@ -58,18 +62,22 @@ serve(async (req) => {
         user_id: userId,
         reading_type,
         spread_type,
-        question,
+        question: question ?? null,
         interpretation_language: profile.preferred_language ?? 'de',
         input_mode,
         voice_used: input_mode === 'voice',
         cards: [],
+        module: 'tarot',
       })
       .select()
       .single();
 
-    if (readingError) throw readingError;
+    if (readingError) {
+      console.error('[reading-start] Insert error:', JSON.stringify(readingError));
+      throw new Error(`Reading insert failed: ${readingError.message} (code: ${readingError.code})`);
+    }
 
-    // Increment reading count
+    // Increment reading count (non-fatal)
     await supabase
       .from('user_profiles')
       .update({ readings_this_month: (profile.readings_this_month ?? 0) + 1 })
@@ -85,7 +93,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal error';
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[reading-start] CAUGHT ERROR:', message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
