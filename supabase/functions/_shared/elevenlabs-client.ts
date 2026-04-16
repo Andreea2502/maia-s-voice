@@ -14,13 +14,13 @@ const PERSONA_AGENT_MAP: Record<PersonaId, string> = {
 };
 
 // ─── Voice IDs for direct TTS (separate from ConvAI agents) ─────
-// Set these in Supabase Edge Function secrets.
-// Falls back to well-known ElevenLabs multilingual voices if not configured.
+// Primary: read from Supabase secrets (set via: npx supabase secrets set ELEVENLABS_VOICE_ID_LUNA=xxx)
+// Fallback: Mila Winter (DcCu06FiOZma2KVNUoPZ) — confirmed in user's ElevenLabs account
 export const PERSONA_VOICE_IDS: Record<string, string> = {
-  luna:   Deno.env.get('ELEVENLABS_VOICE_ID_LUNA')   ?? 'EXAVITQu4vr4xnSDxMaL', // Bella — warm, soft
-  maya:   Deno.env.get('ELEVENLABS_VOICE_ID_MAYA')   ?? 'AZnzlk1XvdvUeBnXmlld', // Domi — deep, grounded
-  zara:   Deno.env.get('ELEVENLABS_VOICE_ID_ZARA')   ?? 'MF3mGyEYCl7XYWbV9V6O', // Elli — clear, direct
-  master: Deno.env.get('ELEVENLABS_VOICE_ID_MASTER') ?? '21m00Tcm4TlvDq8ikWAM', // Rachel — neutral guide
+  luna:   Deno.env.get('ELEVENLABS_VOICE_ID_LUNA')   ?? 'DcCu06FiOZma2KVNUoPZ',
+  maya:   Deno.env.get('ELEVENLABS_VOICE_ID_MAYA')   ?? 'DcCu06FiOZma2KVNUoPZ',
+  zara:   Deno.env.get('ELEVENLABS_VOICE_ID_ZARA')   ?? 'DcCu06FiOZma2KVNUoPZ',
+  master: Deno.env.get('ELEVENLABS_VOICE_ID_MASTER') ?? 'DcCu06FiOZma2KVNUoPZ',
 };
 
 export async function createConversationalAISession(params: {
@@ -66,27 +66,42 @@ export async function textToSpeech(params: {
   const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
 
-  const voiceId = params.voiceId
+  // Resolve voice ID — persona-specific first, then master, then hardcoded fallback
+  const resolvedVoiceId = params.voiceId
     ?? (params.personaId ? PERSONA_VOICE_IDS[params.personaId] : null)
     ?? PERSONA_VOICE_IDS.master;
 
-  const response = await fetch(
-    `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`,
-    {
-      method: 'POST',
-      headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: params.text,
-        model_id: 'eleven_turbo_v2_5',
-        voice_settings: { stability: 0.45, similarity_boost: 0.80 },
-      }),
-    }
-  );
+  console.log(`[elevenlabs-tts] personaId=${params.personaId ?? 'none'} voiceId=${resolvedVoiceId} chars=${params.text.length}`);
+
+  // Try primary voice first, fall back to master on 4xx
+  async function tryVoice(voiceId: string): Promise<Response> {
+    return fetch(
+      `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: params.text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.45, similarity_boost: 0.80 },
+        }),
+      }
+    );
+  }
+
+  let response = await tryVoice(resolvedVoiceId);
+
+  // If primary voice fails with a client error and it's not the master voice, retry with master
+  if (!response.ok && response.status >= 400 && response.status < 500 && resolvedVoiceId !== PERSONA_VOICE_IDS.master) {
+    const errBody = await response.text();
+    console.warn(`[elevenlabs-tts] Primary voice ${resolvedVoiceId} failed (${response.status}: ${errBody}), retrying with master voice ${PERSONA_VOICE_IDS.master}`);
+    response = await tryVoice(PERSONA_VOICE_IDS.master);
+  }
 
   if (!response.ok) {
     const err = await response.text();
-    console.error(`ElevenLabs TTS error — status: ${response.status}, voiceId: ${voiceId}, body: ${err}`);
-    throw new Error(`ElevenLabs TTS error ${response.status}: ${err}`);
+    console.error(`[elevenlabs-tts] FINAL ERROR — status=${response.status} voiceId=${resolvedVoiceId} apiKeyLen=${apiKey.length} body=${err}`);
+    throw new Error(`ElevenLabs TTS ${response.status}: ${err.slice(0, 300)}`);
   }
 
   const audioBuffer = await response.arrayBuffer();
@@ -96,5 +111,6 @@ export async function textToSpeech(params: {
   for (let i = 0; i < bytes.length; i += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
+  console.log(`[elevenlabs-tts] OK — ${bytes.length} bytes`);
   return { audioBase64: btoa(binary), mimeType: 'audio/mpeg' };
 }
