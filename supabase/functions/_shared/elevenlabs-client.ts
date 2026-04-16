@@ -3,7 +3,12 @@ import { PersonaId, SupportedLanguage } from './types.ts';
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
 
 // Überstimme — universal guide for Onboarding + all non-Tarot modules
-const MASTER_AGENT_ID = Deno.env.get('ELEVENLABS_AGENT_ID_MASTER') ?? 'MASTER_AGENT_ID';
+// Fallback chain: MASTER → LUNA → MAYA (so MAIA always has a valid agent)
+const MASTER_AGENT_ID =
+  Deno.env.get('ELEVENLABS_AGENT_ID_MASTER') ||
+  Deno.env.get('ELEVENLABS_AGENT_ID_LUNA')   ||
+  Deno.env.get('ELEVENLABS_AGENT_ID_MAYA')   ||
+  '';
 
 // Tarot personas — selectable inside Tarot module
 // Luna = former Elena agent, Maya = former Amira agent, Zara = new (former Priya)
@@ -38,8 +43,13 @@ export async function createConversationalAISession(params: {
     : MASTER_AGENT_ID;
 
   if (!agentId) {
-    throw new Error(`No agent ID configured for module=${params.module} personaId=${params.personaId}`);
+    throw new Error(
+      `No ElevenLabs agent ID configured for module="${params.module}" personaId="${params.personaId ?? '–'}". ` +
+      `Set ELEVENLABS_AGENT_ID_MASTER (or ELEVENLABS_AGENT_ID_LUNA as fallback) via: npx supabase secrets set ELEVENLABS_AGENT_ID_MASTER=agent_xxx`
+    );
   }
+
+  console.log(`[elevenlabs] Using agent ${agentId} for module=${params.module}`);
 
   // Get a signed WebSocket URL from ElevenLabs.
   // Signed URLs embed a short-lived token so the client never needs the API key directly.

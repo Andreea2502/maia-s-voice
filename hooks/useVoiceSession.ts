@@ -206,22 +206,33 @@ export function useVoiceSession(moduleId: string = 'companion') {
 
     try {
       const token = await getToken();
+      // Log the URL (with token hidden) for debugging
+      const urlForLog = token.wsUrl.replace(/token=[^&]+/, 'token=***');
+      console.log(`[useVoiceSession] Connecting to WS: ${urlForLog} agentId=${token.agentId}`);
       const ws = new WebSocket(token.wsUrl);
       wsRef.current = ws;
 
       ws.onopen = async () => {
         updateStatus('connected');
+        console.log('[useVoiceSession] WS open — agentId:', token.agentId);
 
-        // Send system prompt + first message overrides
-        const overrides = (token as any).overrides;
-        if (overrides?.systemPrompt || overrides?.firstMessage) {
-          const msg: Record<string, unknown> = { type: 'conversation_initiation_client_data' };
-          const agentCfg: Record<string, unknown> = {};
-          if (overrides.systemPrompt) agentCfg.prompt = { prompt: overrides.systemPrompt };
-          if (overrides.firstMessage) agentCfg.first_message = overrides.firstMessage;
-          msg.conversation_config_override = { agent: agentCfg };
-          ws.send(JSON.stringify(msg));
-        }
+        // NOTE: conversation_initiation_client_data (system-prompt override) is intentionally
+        // NOT sent here. It requires the ElevenLabs agent to have "Allow overrides" enabled
+        // in the dashboard (Agent → Security → Allow client-side conversation config).
+        // Without that setting, ElevenLabs closes the connection immediately upon receiving this message.
+        // Configure the agent system prompt & first-message directly in the ElevenLabs dashboard.
+        //
+        // To re-enable: turn on "Allow overrides" in ElevenLabs, then uncomment:
+        // const overrides = (token as any).overrides;
+        // if (overrides?.systemPrompt || overrides?.firstMessage) {
+        //   const msg: Record<string, unknown> = { type: 'conversation_initiation_client_data' };
+        //   const agentCfg: Record<string, unknown> = {};
+        //   if (overrides.systemPrompt) agentCfg.prompt = { prompt: overrides.systemPrompt };
+        //   if (overrides.firstMessage) agentCfg.first_message = overrides.firstMessage;
+        //   msg.conversation_config_override = { agent: agentCfg };
+        //   ws.send(JSON.stringify(msg));
+        //   console.log('[useVoiceSession] Sent conversation_initiation_client_data');
+        // }
 
         // Web: start microphone capture after WebSocket is open
         if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.mediaDevices) {
@@ -289,14 +300,20 @@ export function useVoiceSession(moduleId: string = 'companion') {
         } catch (_) { /* non-JSON */ }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (event) => {
+        console.error('[useVoiceSession] WS error:', event);
         updateStatus('error');
         setError('Verbindungsfehler');
         stopMicCapture();
         stopPlayback();
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        // Log close code so we can diagnose WHY ElevenLabs closed the connection
+        // Common codes: 1000=normal, 1006=abnormal (no close frame), 1008=policy violation (bad agent ID), 1011=server error
+        console.warn(
+          `[useVoiceSession] WS closed — code=${event.code} reason="${event.reason}" wasClean=${event.wasClean} status=${statusRef.current}`
+        );
         // Use statusRef (not captured state) to avoid stale closure
         if (statusRef.current !== 'error') {
           updateStatus('ended');
