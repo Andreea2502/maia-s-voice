@@ -12,10 +12,16 @@ export function useVoiceSession(moduleId: string = 'companion') {
   const startTimeRef = useRef<number>(0);
 
   const getToken = useCallback(async (): Promise<VoiceSessionToken> => {
+    // Ensure we have a fresh session token before calling the authenticated function
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Nicht eingeloggt — bitte neu anmelden');
+
     const { data, error } = await supabase.functions.invoke('voice-token', {
       body: { module: moduleId },
+      headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (error) throw new Error(error.message);
+    if (!data) throw new Error('Keine Antwort vom Server');
     return data as VoiceSessionToken;
   }, [supabase, moduleId]);
 
