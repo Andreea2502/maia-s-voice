@@ -344,9 +344,11 @@ function MaiaCompanionModal({ visible, onClose }: { visible: boolean; onClose: (
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (visible) connect();
+    if (!visible) return;
+    connect();
+    // Cleanup only when modal closes — not on every re-render
     return () => { disconnect(); };
-  }, [visible]);
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -370,6 +372,7 @@ function MaiaCompanionModal({ visible, onClose }: { visible: boolean; onClose: (
 
   const statusLabel =
     status === 'connecting'  ? 'Verbinde...' :
+    status === 'connected'   ? 'Mikrofon wird aktiviert...' :
     status === 'listening'   ? 'Hört zu...' :
     status === 'speaking'    ? 'Spricht...' :
     status === 'thinking'    ? 'Denkt nach...' :

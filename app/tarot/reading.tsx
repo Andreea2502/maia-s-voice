@@ -295,6 +295,15 @@ export default function ReadingScreen() {
   async function handleTTS() {
     if (!interpretation || ttsLoading) return;
     setTtsLoading(true);
+
+    // iOS Safari requires Audio element created synchronously inside user gesture.
+    // Create it NOW (before any await) so the gesture context is preserved.
+    let webAudio: HTMLAudioElement | null = null;
+    if (typeof window !== 'undefined') {
+      webAudio = new (window as any).Audio();
+      webAudio.preload = 'auto';
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('reading-tts', {
         body: { text: interpretation.slice(0, 2000), persona_id: persona.id },
@@ -306,7 +315,7 @@ export default function ReadingScreen() {
         return;
       }
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && webAudio) {
         // Web (incl. mobile Safari via Vercel):
         // Convert base64 → Blob URL for reliable mobile playback
         const binary = atob(data.audio);
@@ -314,9 +323,9 @@ export default function ReadingScreen() {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const blob = new Blob([bytes], { type: data.mime_type ?? 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
-        const audio = new (window as any).Audio(url);
-        audio.onended = () => { setTtsLoading(false); URL.revokeObjectURL(url); };
-        await audio.play();
+        webAudio.src = url;
+        webAudio.onended = () => { setTtsLoading(false); URL.revokeObjectURL(url); };
+        await webAudio.play();
       } else {
         // Native: write to temp file first
         const FileSystem = await import('expo-file-system');

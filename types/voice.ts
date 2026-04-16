@@ -4,6 +4,7 @@ export type VoiceSessionStatus =
   | 'connected'
   | 'listening'
   | 'processing'
+  | 'thinking'
   | 'speaking'
   | 'ended'
   | 'error';
