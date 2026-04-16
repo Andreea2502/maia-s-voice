@@ -89,20 +89,60 @@ export function useVoiceSession(moduleId: string = 'companion') {
     };
   }
 
-  async function enqueueAudioChunk(base64: string) {
+  // Decode µ-law (ulaw) byte → linear Int16 sample
+  function ulawToLinear(ulaw: number): number {
+    ulaw = ~ulaw & 0xFF;
+    const sign = ulaw & 0x80;
+    const exp  = (ulaw >> 4) & 0x07;
+    const mant = ulaw & 0x0F;
+    let sample = ((mant << 1) + 33) << exp;
+    sample -= 33;
+    return sign ? -sample : sample;
+  }
+
+  async function enqueueAudioChunk(base64: string, format: 'pcm_16000' | 'pcm_22050' | 'pcm_24000' | 'ulaw_8000' = 'pcm_16000') {
     try {
       if (!playbackCtxRef.current) {
         playbackCtxRef.current = new (window as any).AudioContext();
       }
       const ctx = playbackCtxRef.current;
 
-      // Decode base64 → ArrayBuffer
+      // iOS Safari: AudioContext might be suspended — resume on first audio chunk
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
+      }
+
+      // Decode base64 → raw bytes
       const binary = atob(base64);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-      const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+      let float32: Float32Array;
+      let sampleRate: number;
+
+      if (format === 'ulaw_8000') {
+        // µ-law encoded at 8 kHz → decode to Float32
+        sampleRate = 8000;
+        float32 = new Float32Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) {
+          float32[i] = ulawToLinear(bytes[i]) / 32768.0;
+        }
+      } else {
+        // Raw signed Int16 PCM little-endian (pcm_16000 / pcm_22050 / pcm_24000)
+        sampleRate = format === 'pcm_22050' ? 22050 : format === 'pcm_24000' ? 24000 : 16000;
+        const samples = new Int16Array(bytes.buffer);
+        float32 = new Float32Array(samples.length);
+        for (let i = 0; i < samples.length; i++) {
+          float32[i] = samples[i] / 32768.0;
+        }
+      }
+
+      // Create AudioBuffer (1 channel, correct sample rate)
+      const audioBuffer = ctx.createBuffer(1, float32.length, sampleRate);
+      audioBuffer.copyToChannel(float32, 0);
+
       audioQueueRef.current.push(audioBuffer);
+      console.log(`[useVoiceSession] Queued ${format} chunk: ${float32.length} samples @${sampleRate}Hz`);
 
       if (!isPlayingRef.current) {
         isPlayingRef.current = true;
@@ -249,11 +289,14 @@ export function useVoiceSession(moduleId: string = 'companion') {
               break;
 
             case 'audio': {
-              // ElevenLabs sends audio for playback
+              // ElevenLabs sends raw PCM/ulaw audio chunks (NOT mp3/wav)
+              // Format is set in the agent's dashboard: pcm_16000 or ulaw_8000
               updateStatus('speaking');
               const audioB64 = msg.audio_event?.audio_base_64;
               if (audioB64 && Platform.OS === 'web') {
-                await enqueueAudioChunk(audioB64);
+                // Read format from token (defaults to pcm_16000 if not set)
+                const fmt = (token as any).audioFormat ?? 'pcm_16000';
+                await enqueueAudioChunk(audioB64, fmt);
               }
               break;
             }

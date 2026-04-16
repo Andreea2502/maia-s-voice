@@ -85,11 +85,18 @@ export async function createConversationalAISession(params: {
 
   const sessionId = crypto.randomUUID();
 
+  // Audio format configured in the ElevenLabs agent dashboard.
+  // Must match exactly so the client can decode the raw PCM/ulaw bytes.
+  // Supported: pcm_16000 | pcm_22050 | pcm_24000 | ulaw_8000
+  // Set via: npx supabase secrets set ELEVENLABS_AUDIO_FORMAT=pcm_16000
+  const audioFormat = Deno.env.get('ELEVENLABS_AUDIO_FORMAT') ?? 'pcm_16000';
+
   return {
     token: wsUrl,
     sessionId,
     agentId,
     wsUrl,
+    audioFormat,
     ...(params.systemPromptOverride || params.firstMessage
       ? { overrides: { systemPrompt: params.systemPromptOverride, firstMessage: params.firstMessage } }
       : {}),
