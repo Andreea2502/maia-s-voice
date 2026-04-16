@@ -31,9 +31,17 @@ export default function BirthDataScreen() {
     return { lat: r.latitude, lng: r.longitude, timezone: r.timezone };
   }
 
+  // Convert DD.MM.YYYY → YYYY-MM-DD for storage
+  function toIsoDate(input: string): string | null {
+    const match = input.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!match) return null;
+    return `${match[3]}-${match[2]}-${match[1]}`;
+  }
+
   async function handleSubmit() {
-    if (!birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      setError('Geburtsdatum im Format JJJJ-MM-TT eingeben');
+    const isoDate = toIsoDate(birthDate);
+    if (!isoDate) {
+      setError('Geburtsdatum im Format TT.MM.JJJJ eingeben (z.B. 25.02.1984)');
       return;
     }
     if (!timeUnknown && birthTime && !birthTime.match(/^\d{2}:\d{2}$/)) {
@@ -53,7 +61,7 @@ export default function BirthDataScreen() {
 
       // Save birth data
       await supabase.from('birth_data').upsert({
-        birth_date: birthDate,
+        birth_date: isoDate,
         birth_time: timeUnknown ? null : (birthTime || null),
         birth_time_known: !timeUnknown,
         birth_city: city.trim(),
@@ -67,7 +75,7 @@ export default function BirthDataScreen() {
         pathname: '/astrology/questionnaire',
         params: {
           type,
-          birthDate,
+          birthDate: isoDate,
           birthTime: timeUnknown ? '' : birthTime,
           birthLat: String(geo.lat),
           birthLng: String(geo.lng),
@@ -97,7 +105,7 @@ export default function BirthDataScreen() {
           style={styles.input}
           value={birthDate}
           onChangeText={setBirthDate}
-          placeholder="JJJJ-MM-TT (z.B. 1990-03-15)"
+          placeholder="TT.MM.JJJJ (z.B. 25.02.1984)"
           placeholderTextColor={C.textMuted}
           keyboardType="numbers-and-punctuation"
           maxLength={10}

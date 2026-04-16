@@ -279,7 +279,7 @@ export default function ProfileScreen() {
             <View style={styles.profileDetail}>
               <Text style={styles.profileDetailIcon}>📅</Text>
               <Text style={styles.profileDetailText}>
-                {new Date(birthDate).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {birthDate.split('-').reverse().join('.')}
                 {birthCity ? ` · ${birthCity}` : ''}
               </Text>
             </View>

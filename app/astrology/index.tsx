@@ -127,7 +127,7 @@ export default function AstrologyIndex() {
           <>
             <View style={styles.profileBadge}>
               <Text style={styles.profileBadgeText}>
-                📍 {profile.birthCity} · {profile.birthDate}
+                📍 {profile.birthCity} · {profile.birthDate.split('-').reverse().join('.')}
               </Text>
               <TouchableOpacity onPress={() => router.push('/astrology/birth-data?type=natal_chart' as any)}>
                 <Text style={styles.profileBadgeEdit}>ändern</Text>
