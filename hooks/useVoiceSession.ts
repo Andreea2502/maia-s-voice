@@ -15,7 +15,7 @@ import { Platform } from 'react-native';
 import { VoiceSessionStatus, VoiceSessionToken, TranscriptEntry, VoiceSessionResult } from '@/types/voice';
 import { useSupabase } from './useSupabase';
 
-export function useVoiceSession(moduleId: string = 'companion') {
+export function useVoiceSession(moduleId: string = 'companion', personaId?: string) {
   const supabase = useSupabase();
   const [status, setStatus] = useState<VoiceSessionStatus>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -51,13 +51,13 @@ export function useVoiceSession(moduleId: string = 'companion') {
     if (!session) throw new Error('Nicht eingeloggt — bitte neu anmelden');
 
     const { data, error } = await supabase.functions.invoke('voice-token', {
-      body: { module: moduleId },
+      body: { module: moduleId, ...(personaId ? { personaId } : {}) },
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (error) throw new Error(error.message);
     if (!data) throw new Error('Keine Antwort vom Server');
     return data as VoiceSessionToken;
-  }, [supabase, moduleId]);
+  }, [supabase, moduleId, personaId]);
 
   // ── Web: play queued audio buffers back-to-back ───────────────────────────
   function scheduleNextChunk() {
