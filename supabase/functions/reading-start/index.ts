@@ -26,6 +26,8 @@ serve(async (req) => {
     }
 
     // Fetch profile + check reading limits
+    console.log(`[reading-start] userId=${userId} module=${reading_type} spread=${spread_type}`);
+
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('subscription_tier, readings_this_month, life_context_summary, preferred_language')
@@ -34,9 +36,10 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('[reading-start] Profile fetch error:', JSON.stringify(profileError));
-      throw new Error(`Profile fetch failed: ${profileError.message}`);
+      throw new Error(`Profile fetch failed: ${profileError.message} (code: ${profileError.code})`);
     }
     if (!profile) throw new Error('Profile not found');
+    console.log(`[reading-start] profile tier=${profile.subscription_tier} count=${profile.readings_this_month} lang=${profile.preferred_language}`);
 
     const LIMITS: Record<string, number> = { free: 10, basic: 30, premium: 100, unlimited: -1 };
     const limit = LIMITS[profile.subscription_tier ?? 'free'] ?? 10;
@@ -56,6 +59,7 @@ serve(async (req) => {
       .limit(5);
 
     // Create reading row
+    console.log('[reading-start] Inserting reading...');
     const { data: reading, error: readingError } = await supabase
       .from('readings')
       .insert({

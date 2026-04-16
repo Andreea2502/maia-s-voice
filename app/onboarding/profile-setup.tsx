@@ -138,12 +138,24 @@ export default function ProfileSetupScreen() {
     }
   }
 
+  // Convert DD.MM.YYYY → YYYY-MM-DD (for internal storage)
+  function toIsoDate(input: string): string | null {
+    const m = input.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (!m) return null;
+    const [, dd, mm, yyyy] = m;
+    return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+  }
+
   // ── Validate birth step ────────────────────────────────────────────────────
   async function validateBirth() {
-    if (!form.birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      setError('Geburtsdatum im Format JJJJ-MM-TT eingeben (z.B. 1990-03-15)');
+    // Accept both DD.MM.YYYY and YYYY-MM-DD
+    const iso = toIsoDate(form.birthDate) ?? (form.birthDate.match(/^\d{4}-\d{2}-\d{2}$/) ? form.birthDate : null);
+    if (!iso) {
+      setError('Geburtsdatum im Format TT.MM.JJJJ eingeben (z.B. 25.03.1990)');
       return false;
     }
+    // Normalise to ISO in form state so downstream code is consistent
+    patch({ birthDate: iso });
     if (form.birthTimeKnown && form.birthTime && !form.birthTime.match(/^\d{2}:\d{2}$/)) {
       setError('Uhrzeit im Format HH:MM eingeben');
       return false;
@@ -342,7 +354,7 @@ function BirthStep({
           style={styles.input}
           value={form.birthDate}
           onChangeText={(v) => patch({ birthDate: v })}
-          placeholder="JJJJ-MM-TT  (z.B. 1990-03-15)"
+          placeholder="TT.MM.JJJJ  (z.B. 25.03.1990)"
           placeholderTextColor={C.textMuted}
           keyboardType="numbers-and-punctuation"
           maxLength={10}
